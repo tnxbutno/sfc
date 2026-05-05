@@ -9,7 +9,7 @@ on:
 jobs:
   # ── macOS ────────────────────────────────────────────────────────────────────
   build-macos:
-    name: macOS (static)
+    name: macOS
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,8 +20,7 @@ jobs:
       - name: Configure
         run: |
           cmake -S . -B build \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DSFC_STATIC=ON
+            -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         run: cmake --build build --config Release -j$(sysctl -n hw.logicalcpu)

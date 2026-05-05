@@ -15,6 +15,12 @@ option(SFC_TSAN   "Enable ThreadSanitizer (mutually exclusive with SFC_ASAN)"  O
 option(SFC_FUZZ   "Build libFuzzer fuzz targets (requires Clang with libFuzzer)" OFF)
 option(SFC_STATIC "Link third-party deps (zstd/brotli/lz4) statically into sfc CLI" OFF)
 
+# On MSVC with static linking, all targets (including FetchContent deps) must
+# use the same CRT. Set this before any FetchContent_MakeAvailable calls.
+if(MSVC AND SFC_STATIC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
 if(SFC_ASAN AND SFC_TSAN)
     message(FATAL_ERROR "SFC_ASAN and SFC_TSAN are mutually exclusive")
 endif()
@@ -113,17 +119,16 @@ if(WIN32)
     set(SFC_COMP_CFLAGS       "")
 else()
     find_package(PkgConfig REQUIRED)
-    if(SFC_STATIC)
-        set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".lib")
-        pkg_check_modules(ZSTD   REQUIRED STATIC libzstd)
-        pkg_check_modules(BROTLI REQUIRED STATIC libbrotlienc libbrotlidec)
-        pkg_check_modules(LZ4    REQUIRED STATIC liblz4)
+    pkg_check_modules(ZSTD   REQUIRED libzstd)
+    pkg_check_modules(BROTLI REQUIRED libbrotlienc libbrotlidec)
+    pkg_check_modules(LZ4    REQUIRED liblz4)
+
+    if(SFC_STATIC AND NOT APPLE)
+        # Use static libraries populated by pkg-config from Libs.private entries.
+        set(SFC_COMP_LIBS ${ZSTD_STATIC_LIBRARIES} ${BROTLI_STATIC_LIBRARIES} ${LZ4_STATIC_LIBRARIES})
     else()
-        pkg_check_modules(ZSTD   REQUIRED libzstd)
-        pkg_check_modules(BROTLI REQUIRED libbrotlienc libbrotlidec)
-        pkg_check_modules(LZ4    REQUIRED liblz4)
+        set(SFC_COMP_LIBS ${ZSTD_LIBRARIES} ${BROTLI_LIBRARIES} ${LZ4_LIBRARIES})
     endif()
-    set(SFC_COMP_LIBS         ${ZSTD_LIBRARIES} ${BROTLI_LIBRARIES} ${LZ4_LIBRARIES})
     set(SFC_COMP_INCLUDE_DIRS ${ZSTD_INCLUDE_DIRS} ${BROTLI_INCLUDE_DIRS} ${LZ4_INCLUDE_DIRS})
     set(SFC_COMP_LIBRARY_DIRS ${ZSTD_LIBRARY_DIRS} ${BROTLI_LIBRARY_DIRS} ${LZ4_LIBRARY_DIRS})
     set(SFC_COMP_CFLAGS       ${ZSTD_CFLAGS_OTHER} ${BROTLI_CFLAGS_OTHER} ${LZ4_CFLAGS_OTHER})
@@ -437,10 +442,6 @@ if(SFC_STATIC)
         # already pulled in via pkg_check_modules STATIC above.
         # For a fully static binary (no glibc dep) use musl libc (see README).
         target_link_options(sfc_cli PRIVATE -static-libstdc++ -static-libgcc)
-    elseif(MSVC)
-        # MSVC: /MT embeds the CRT. Set per-target to avoid conflicts with deps.
-        set_target_properties(sfc_cli PROPERTIES
-            MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     endif()
 endif()
 
