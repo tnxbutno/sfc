@@ -68,11 +68,16 @@ static std::vector<uint8_t> slurp_bytes(const fs::path& p) {
 /// to the supplied temp files, and return the exit code + captured output.
 static RunResult run_cmd(const std::string& cmd,
                          const fs::path& out_f, const fs::path& err_f) {
+#ifdef _WIN32
+    // cmd.exe /C strips the first and last quote when the string starts with one.
+    // Wrap in an extra outer pair so inner quoting survives after stripping.
+    const std::string full = "\"" + cmd
+        + " >\"" + out_f.string() + "\""
+        + " 2>\"" + err_f.string() + "\"\"";
+    const int exit_code = std::system(full.c_str()); // NOLINT(cert-env33-c)
+#else
     const std::string full = cmd + " >" + out_f.string() + " 2>" + err_f.string();
     const int raw = std::system(full.c_str()); // NOLINT(cert-env33-c)
-#ifdef _WIN32
-    const int exit_code = raw;
-#else
     const int exit_code = WIFEXITED(raw) ? WEXITSTATUS(raw) : -1;
 #endif
     return RunResult{exit_code, slurp(out_f), slurp(err_f)};
