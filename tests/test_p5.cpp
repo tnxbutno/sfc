@@ -35,6 +35,7 @@ static EncodeParams make_params(CompressionAlgo algo = CompressionAlgo::Identity
         .timestamp = 0,
         .format_id = 0x0001,
         .filename  = "directory",
+        .metadata  = {},
     };
 }
 
