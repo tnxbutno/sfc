@@ -118,7 +118,8 @@ Result<ReassemblyResult> full_reassembly(
     return ReassemblyResult{
         .content        = std::move(content),
         .status         = status,
-        .missing_chunks = {}
+        .missing_chunks = {},
+        .metadata       = {}
     };
 }
 
@@ -192,7 +193,8 @@ Result<ReassemblyResult> partial_reassembly(
     return ReassemblyResult{
         .content        = std::move(content),
         .status         = ReassemblyStatus::Partial,
-        .missing_chunks = std::move(missing)
+        .missing_chunks = std::move(missing),
+        .metadata       = {}
     };
 }
 
