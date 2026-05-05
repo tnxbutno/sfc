@@ -139,7 +139,8 @@ void setup_unpack(CLI::App& app) {
                     };
 
                     std::filesystem::path out_path(opts->output);
-                    bool is_dir = opts->output.back() == '/' ||
+                    const char back = opts->output.back();
+                    bool is_dir = back == '/' || back == '\\' ||
                                   std::filesystem::is_directory(out_path);
                     std::string dest = opts->output;
                     if (is_dir) {
