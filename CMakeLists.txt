@@ -51,11 +51,14 @@ else()
     )
     # Tests: same but skip -Wpedantic and conversion warnings — GTest macros
     # are not written to our stricter standard.
+    # -Wno-missing-field-initializers: GCC fires on partial designated init
+    # even though C++ zero-initializes omitted fields; suppress for tests.
     set(SFC_WARN_TESTS
         -Wall
         -Wextra
         -Wshadow
         -Wimplicit-fallthrough
+        -Wno-missing-field-initializers
         -Werror
     )
 endif()
