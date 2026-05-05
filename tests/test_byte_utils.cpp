@@ -104,7 +104,7 @@ TEST(ByteUtils, ReadU64LE_OneTB) {
 }
 
 TEST(ByteUtils, WriteU64LE_RoundTrip) {
-    for (uint64_t v : {0ULL, 1ULL, 0x123456789ABCDEF0ULL,
+    for (uint64_t v : std::initializer_list<uint64_t>{0, 1, 0x123456789ABCDEF0ULL,
                        std::numeric_limits<uint64_t>::max()}) {
         auto bytes = write_u64_le(v);
         EXPECT_EQ(read_u64_le(bytes), v);
