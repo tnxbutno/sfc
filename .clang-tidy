@@ -1,0 +1,72 @@
+# .clang-tidy — static analysis configuration for sfc.
+#
+# Enabled check families:
+#   bugprone-*          real bugs: use-after-move, integer-division, …
+#   clang-analyzer-*    Clang's deep inter-procedural analysis
+#   cppcoreguidelines-* C++ Core Guidelines (selected subset)
+#   performance-*       unnecessary copies, move-instead-of-copy, …
+#   portability-*       code that breaks on other platforms/compilers
+#   modernize-*         adopt C++11/14/17/20/23 idioms
+#
+# Suppressed checks (rationale inline):
+#   cppcoreguidelines-avoid-magic-numbers   — byte literals (0x53, 0x46 …) are
+#                                             intentional and documented.
+#   modernize-use-trailing-return-type      — stylistic preference; adds noise
+#                                             without safety benefit.
+#   bugprone-easily-swappable-parameters    — high false-positive rate on
+#                                             well-named parameter lists.
+#   cppcoreguidelines-pro-bounds-pointer-arithmetic
+#                                           — std::span + .data()+offset is the
+#                                             canonical C++23 pattern here.
+#   cppcoreguidelines-pro-bounds-array-to-pointer-decay
+#                                           — static arrays used intentionally
+#                                             for compile-time-sized buffers.
+#   cppcoreguidelines-pro-bounds-constant-array-index
+#                                           — deliberate indexed access with
+#                                             pre-validated bounds.
+#   cppcoreguidelines-owning-memory         — no GSL dependency; RAII via
+#                                             std::vector covers all ownership.
+#   cppcoreguidelines-pro-type-reinterpret-cast
+#                                           — eliminated from source; suppressed
+#                                             to avoid re-triggering during
+#                                             system-header analysis.
+#   modernize-use-auto                      — explicit types aid readability for
+#                                             a learning codebase.
+#   portability-simd-intrinsics             — no SIMD usage; irrelevant.
+
+Checks: >
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  clang-analyzer-*,
+  cppcoreguidelines-*,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  performance-*,
+  portability-*,
+  -portability-simd-intrinsics,
+  modernize-*,
+  -modernize-use-auto,
+  -modernize-use-trailing-return-type
+
+# Every enabled check is an error — no warnings allowed.
+WarningsAsErrors: "*"
+
+# Only emit diagnostics for our own headers, not system or third-party.
+HeaderFilterRegex: "^.*/include/sfc/.*$"
+
+CheckOptions:
+  # Only suggest auto when the replaced type name is ≥ 10 chars.
+  - key:   modernize-use-auto.MinTypeNameLength
+    value: "10"
+
+  # Allow sole-default destructor without requiring all 5 special members.
+  - key:   cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value: "true"
+
+  # Allow structs/classes that only define move operations.
+  - key:   cppcoreguidelines-special-member-functions.AllowMissingMoveFunctions
+    value: "true"

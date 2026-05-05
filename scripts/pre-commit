@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# pre-commit hook: format-check + fast clang-tidy on staged files.
+#
+# Install via: bash scripts/install-hooks.sh
+# Manual run:  bash scripts/pre-commit
+
+set -euo pipefail
+
+ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
+BUILD_DIR="$ROOT/build"
+
+# ── Require a built compile_commands.json ───────────────────────────────────
+if [[ ! -f "$BUILD_DIR/compile_commands.json" ]]; then
+    echo "pre-commit: build directory not found."
+    echo "  Run: cmake -S . -B build && cmake --build build"
+    exit 1
+fi
+
+# ── 1. Format check on ALL staged C++/header files ──────────────────────────
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM \
+               | grep -E '\.(cpp|h)$' || true)
+
+if [[ -n "$STAGED_FILES" ]]; then
+    CLANG_FORMAT=$(command -v clang-format \
+                   || command -v /opt/homebrew/opt/llvm/bin/clang-format \
+                   || true)
+
+    if [[ -z "$CLANG_FORMAT" ]]; then
+        echo "pre-commit: clang-format not found — skipping format check."
+    else
+        echo "pre-commit: checking format of $(echo "$STAGED_FILES" | wc -l | tr -d ' ') file(s)…"
+        # --dry-run --Werror: print diff and exit non-zero if any file differs.
+        # shellcheck disable=SC2086
+        "$CLANG_FORMAT" --dry-run --Werror $STAGED_FILES
+        echo "pre-commit: format OK"
+    fi
+fi
+
+# ── 2. clang-tidy on staged .cpp library/source files only ──────────────────
+STAGED_SRC=$(echo "${STAGED_FILES:-}" \
+             | tr ' ' '\n' \
+             | grep -E '^src/.*\.cpp$' || true)
+
+if [[ -n "$STAGED_SRC" ]]; then
+    CLANG_TIDY=$(command -v clang-tidy \
+                 || command -v /opt/homebrew/opt/llvm/bin/clang-tidy \
+                 || true)
+
+    if [[ -z "$CLANG_TIDY" ]]; then
+        echo "pre-commit: clang-tidy not found — skipping lint."
+    else
+        echo "pre-commit: running clang-tidy on $(echo "$STAGED_SRC" | wc -l | tr -d ' ') file(s)…"
+        # Run from repo root so relative paths in compile_commands.json resolve.
+        cd "$ROOT"
+        # shellcheck disable=SC2086
+        "$CLANG_TIDY" -p "$BUILD_DIR" --warnings-as-errors='*' $STAGED_SRC
+        echo "pre-commit: clang-tidy OK"
+    fi
+fi
+
+echo "pre-commit: all checks passed ✓"

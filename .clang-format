@@ -1,0 +1,68 @@
+# .clang-format — code formatting for sfc (C++23).
+#
+# Style: LLVM base with 4-space indent and 100-column limit.
+# Matches the existing hand-written style as closely as possible.
+
+BasedOnStyle: LLVM
+
+# Indentation
+IndentWidth:             4
+ContinuationIndentWidth: 4
+TabWidth:                4
+UseTab:                  Never
+
+# Column limit
+ColumnLimit: 100
+
+# Namespace handling — no extra indent inside namespaces.
+NamespaceIndentation: None
+CompactNamespaces:    false
+
+# Braces — keep opening braces on the same line (Attach style).
+BreakBeforeBraces: Attach
+
+# Short constructs — only allow short functions inline on one line.
+AllowShortFunctionsOnASingleLine:   Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine:        false
+AllowShortBlocksOnASingleLine:       Empty
+AllowShortCaseLabelsOnASingleLine:   false
+
+# Function parameters — align after opening paren when breaking.
+AlignAfterOpenBracket:  Align
+BinPackParameters:      false
+BinPackArguments:       false
+
+# Include ordering — group system and project headers.
+IncludeBlocks:           Regroup
+SortIncludes:            CaseSensitive
+
+# Pointer and reference alignment.
+PointerAlignment:   Right
+ReferenceAlignment: Right
+
+# Trailing commas in parameter lists — never add them automatically.
+InsertTrailingCommas: None
+
+# Comment alignment — don't align trailing comments beyond natural position.
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 0
+
+# Penalty settings — prefer not to break long lines in the middle of type names.
+PenaltyBreakBeforeFirstCallParameter: 1000
+PenaltyExcessCharacter:               100
+
+# C++11 aggregate initializer bracing.
+Cpp11BracedListStyle: true
+
+# Blank lines.
+MaxEmptyLinesToKeep:     1
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+# Spacing.
+SpaceBeforeParens:         ControlStatements
+SpaceBeforeSquareBrackets: false
+SpacesInAngles:            Never
+SpacesInContainerLiterals: false
+SpacesInSquareBrackets:    false

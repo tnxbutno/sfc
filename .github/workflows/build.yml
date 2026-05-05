@@ -1,0 +1,122 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # ── macOS ────────────────────────────────────────────────────────────────────
+  build-macos:
+    name: macOS (static)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps
+        run: brew install zstd brotli lz4
+
+      - name: Configure
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSFC_STATIC=ON
+
+      - name: Build
+        run: cmake --build build --config Release -j$(sysctl -n hw.logicalcpu)
+
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Smoke test
+        run: |
+          echo "hello sfc" > /tmp/test.txt
+          ./build/sfc pack /tmp/test.txt -o /tmp/test.sfc
+          ./build/sfc info /tmp/test.sfc
+          ./build/sfc verify /tmp/test.sfc
+          ./build/sfc unpack /tmp/test.sfc -o /tmp/out/
+          grep -q "hello sfc" /tmp/out/test.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sfc-macos-arm64
+          path: build/sfc
+
+  # ── Linux ────────────────────────────────────────────────────────────────────
+  build-linux:
+    name: Linux (static)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libzstd-dev libbrotli-dev liblz4-dev
+
+      - name: Configure
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSFC_STATIC=ON
+
+      - name: Build
+        run: cmake --build build --config Release -j$(nproc)
+
+      - name: Unit tests
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Smoke test
+        run: |
+          echo "hello sfc" > /tmp/test.txt
+          ./build/sfc pack /tmp/test.txt -o /tmp/test.sfc
+          ./build/sfc info /tmp/test.sfc
+          ./build/sfc verify /tmp/test.sfc
+          ./build/sfc unpack /tmp/test.sfc -o /tmp/out/
+          grep -q "hello sfc" /tmp/out/test.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sfc-linux-x86_64
+          path: build/sfc
+
+  # ── Windows ──────────────────────────────────────────────────────────────────
+  build-windows:
+    name: Windows (static)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps via vcpkg
+        run: vcpkg install zstd:x64-windows-static brotli:x64-windows-static lz4:x64-windows-static
+        env:
+          VCPKG_DEFAULT_TRIPLET: x64-windows-static
+
+      - name: Configure
+        run: |
+          cmake -S . -B build `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DSFC_STATIC=ON `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows-static
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Unit tests
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Smoke test
+        run: |
+          echo "hello sfc" | Out-File -FilePath test.txt -Encoding utf8
+          .\build\Release\sfc.exe pack test.txt -o test.sfc
+          .\build\Release\sfc.exe info test.sfc
+          .\build\Release\sfc.exe verify test.sfc
+          .\build\Release\sfc.exe unpack test.sfc -o out\
+          Select-String -Path out\test.txt -Pattern "hello sfc"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sfc-windows-x64
+          path: build\Release\sfc.exe

@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# pre-push hook: full format-check + lint + build + test suite.
+#
+# Install via: bash scripts/install-hooks.sh
+# Manual run:  bash scripts/pre-push
+
+set -euo pipefail
+
+ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
+BUILD_DIR="$ROOT/build"
+
+cd "$ROOT"
+
+echo "pre-push: ── 1/4  format-check ─────────────────────────────────────────"
+if cmake --build "$BUILD_DIR" --target format-check 2>&1; then
+    echo "pre-push: format OK"
+else
+    echo ""
+    echo "pre-push: FAILED — uncommitted formatting differences found."
+    echo "  Fix: cmake --build build --target format   (or: make format)"
+    exit 1
+fi
+
+echo ""
+echo "pre-push: ── 2/4  lint (clang-tidy + cppcheck) ─────────────────────────"
+if cmake --build "$BUILD_DIR" --target lint 2>&1; then
+    echo "pre-push: lint OK"
+else
+    echo ""
+    echo "pre-push: FAILED — linter reported issues (see output above)."
+    exit 1
+fi
+
+echo ""
+echo "pre-push: ── 3/4  build ─────────────────────────────────────────────────"
+if cmake --build "$BUILD_DIR" 2>&1; then
+    echo "pre-push: build OK"
+else
+    echo ""
+    echo "pre-push: FAILED — build errors (see output above)."
+    exit 1
+fi
+
+echo ""
+echo "pre-push: ── 4/4  test suite ────────────────────────────────────────────"
+if ctest --test-dir "$BUILD_DIR" --output-on-failure 2>&1; then
+    echo "pre-push: all tests passed"
+else
+    echo ""
+    echo "pre-push: FAILED — test failures (see output above)."
+    exit 1
+fi
+
+echo ""
+echo "pre-push: all gates passed ✓  — push proceeding."
