@@ -3,7 +3,12 @@
 ///        real file I/O and the compiled binary.
 
 #include <gtest/gtest.h>
-#include <sys/wait.h>
+
+#ifdef _WIN32
+#  include <process.h>
+#else
+#  include <sys/wait.h>
+#endif
 
 #include <cstdlib>
 #include <filesystem>
@@ -30,8 +35,14 @@ struct RunResult {
     std::string err;  // captured stderr
 };
 
-/// Wrap a token in single quotes for safe shell use (paths, args).
-static std::string q(const std::string& s) { return '\'' + s + '\''; }
+/// Wrap a token in quotes for safe shell use (paths, args).
+static std::string q(const std::string& s) {
+#ifdef _WIN32
+    return '"' + s + '"';
+#else
+    return '\'' + s + '\'';
+#endif
+}
 
 /// Slurp a file into a string (returns "" when missing).
 static std::string slurp(const fs::path& p) {
@@ -59,11 +70,12 @@ static RunResult run_cmd(const std::string& cmd,
                          const fs::path& out_f, const fs::path& err_f) {
     const std::string full = cmd + " >" + out_f.string() + " 2>" + err_f.string();
     const int raw = std::system(full.c_str()); // NOLINT(cert-env33-c)
-    return RunResult{
-        WIFEXITED(raw) ? WEXITSTATUS(raw) : -1,
-        slurp(out_f),
-        slurp(err_f),
-    };
+#ifdef _WIN32
+    const int exit_code = raw;
+#else
+    const int exit_code = WIFEXITED(raw) ? WEXITSTATUS(raw) : -1;
+#endif
+    return RunResult{exit_code, slurp(out_f), slurp(err_f)};
 }
 
 // ===========================================================================
@@ -78,8 +90,13 @@ protected:
 
     void SetUp() override {
         // Unique directory per test instance using the pointer address.
+#ifdef _WIN32
+        const int pid = ::_getpid();
+#else
+        const int pid = ::getpid();
+#endif
         tmp = fs::temp_directory_path() /
-              ("sfc_test_" + std::to_string(::getpid()) + "_" +
+              ("sfc_test_" + std::to_string(pid) + "_" +
                std::to_string(reinterpret_cast<uintptr_t>(this)));
         fs::create_directories(tmp);
         out_f = tmp / "_stdout.txt";
@@ -101,7 +118,11 @@ protected:
     // Run sfc with stdin fed from a file on disk.
     RunResult sfc_stdin(const fs::path& stdin_file,
                         std::initializer_list<std::string> args) const {
-        std::string cmd = "cat " + q(stdin_file) + " | " + q(SFC_BINARY_PATH);
+#ifdef _WIN32
+        std::string cmd = "type " + q(stdin_file.string()) + " | " + q(SFC_BINARY_PATH);
+#else
+        std::string cmd = "cat " + q(stdin_file.string()) + " | " + q(SFC_BINARY_PATH);
+#endif
         for (const auto& a : args) cmd += ' ' + q(a);
         return run_cmd(cmd, out_f, err_f);
     }
