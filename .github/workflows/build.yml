@@ -52,13 +52,14 @@ jobs:
       - name: Install deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y pkg-config libzstd-dev libbrotli-dev liblz4-dev
+          sudo apt-get install -y pkg-config libzstd-dev libbrotli-dev liblz4-dev g++-14
 
       - name: Configure
         run: |
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
-            -DSFC_STATIC=ON
+            -DSFC_STATIC=ON \
+            -DCMAKE_CXX_COMPILER=g++-14
 
       - name: Build
         run: cmake --build build --config Release -j$(nproc)
