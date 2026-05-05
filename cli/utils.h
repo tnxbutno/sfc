@@ -57,8 +57,8 @@ inline std::vector<uint8_t> read_stdin() {
 
 /// Write bytes to a file, creating parent directories as needed.
 inline void write_file(const std::string& path, std::span<const uint8_t> data) {
-    std::filesystem::create_directories(
-        std::filesystem::path(path).parent_path());
+    const auto parent = std::filesystem::path(path).parent_path();
+    if (!parent.empty()) std::filesystem::create_directories(parent);
     std::ofstream out(path, std::ios::binary);
     if (!out) throw std::runtime_error("cannot open for writing: " + path);
     out.write(reinterpret_cast<const char*>(data.data()),
