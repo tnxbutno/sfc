@@ -4,6 +4,7 @@
 #include "sfc/segment_header.h"
 #include "sfc/byte_utils.h"
 
+#include <algorithm>
 #include <format>
 
 namespace sfc {

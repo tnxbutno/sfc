@@ -4,6 +4,7 @@
 #include "sfc/trailer.h"
 #include "sfc/byte_utils.h"
 
+#include <algorithm>
 #include <format>
 
 namespace sfc {
