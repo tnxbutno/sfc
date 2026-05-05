@@ -9,6 +9,7 @@
 #include "sfc/split_decoder.h"
 
 #include <CLI/CLI.hpp>
+#include <algorithm>
 #include <filesystem>
 #include <memory>
 #include <print>
@@ -127,13 +128,28 @@ void setup_unpack(CLI::App& app) {
                 if (opts->output.empty()) {
                     cli::write_stdout(entry.result.content);
                 } else {
+                    // Resolve original filename from header for directory output.
+                    auto get_orig_name = [&]() -> std::string {
+                        auto it = hdr_map.find(entry.uuid);
+                        if (it == hdr_map.end()) return cli::format_uuid(entry.uuid);
+                        const auto& raw = it->second.inner_filename;
+                        const auto end = std::find(raw.begin(), raw.end(), uint8_t{0});
+                        std::string name(raw.begin(), end);
+                        return name.empty() ? cli::format_uuid(entry.uuid) : name;
+                    };
+
+                    std::filesystem::path out_path(opts->output);
+                    bool is_dir = opts->output.back() == '/' ||
+                                  std::filesystem::is_directory(out_path);
                     std::string dest = opts->output;
-                    if (results->size() > 1) {
-                        const std::filesystem::path p(opts->output);
-                        dest = (p.parent_path() /
-                                (p.stem().string() + "-" +
+                    if (is_dir) {
+                        std::filesystem::create_directories(out_path);
+                        dest = (out_path / get_orig_name()).string();
+                    } else if (results->size() > 1) {
+                        dest = (out_path.parent_path() /
+                                (out_path.stem().string() + "-" +
                                  cli::format_uuid(entry.uuid).substr(0, 8) +
-                                 p.extension().string())).string();
+                                 out_path.extension().string())).string();
                     }
                     try {
                         cli::write_file(dest, entry.result.content);
