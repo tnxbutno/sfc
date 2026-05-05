@@ -1,13 +1,11 @@
 
 Network Working Group                                      V. Krivchikov
 Internet-Draft                                               Independent
-Intended status: Standards Track                           5 May 2026
-Expires: 5 November 2026
+Intended status: Standards Track           draft-sfc-container-format-00
+Expires: 5 November 2026                                   5 May 2026
 
 
-                     draft-sfc-container-format-00
-
-      SFC: Self-Describing Resilient Container File Format
+              SFC: Self-Describing Resilient Container File Format
 
 Abstract
 
