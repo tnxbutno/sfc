@@ -52,32 +52,32 @@ static GlobalHeader make_test_global_header(const FileUuid& uuid = {}) {
 // D1: validate_preamble
 // ===========================================================================
 
-TEST(ValidatePreamble, Valid_SFCv1) {
-    // "SFC\0" + major=1 (LE u16) + minor=8 (LE u16).
-    std::array<uint8_t, 8> p = {0x53, 0x46, 0x43, 0x00, 0x01, 0x00, 0x08, 0x00};
+TEST(ValidatePreamble, Valid_SFCv0_1) {
+    // "SFC\0" + major=0 (LE u16) + minor=1 (LE u16).
+    std::array<uint8_t, 8> p = {0x53, 0x46, 0x43, 0x00, 0x00, 0x00, 0x01, 0x00};
     auto res = validate_preamble(p);
     EXPECT_TRUE(res.has_value()) << (res.has_value() ? "" : res.error().detail);
 }
 
 TEST(ValidatePreamble, BadMagic_Error) {
     // First byte corrupted.
-    std::array<uint8_t, 8> p = {0xFF, 0x46, 0x43, 0x00, 0x01, 0x00, 0x08, 0x00};
+    std::array<uint8_t, 8> p = {0xFF, 0x46, 0x43, 0x00, 0x00, 0x00, 0x01, 0x00};
     auto res = validate_preamble(p);
     ASSERT_FALSE(res.has_value());
     EXPECT_EQ(res.error().code, ErrorCode::InvalidMagic);
 }
 
-TEST(ValidatePreamble, MajorVersion2_Error) {
-    // Major version 2 is not supported.
-    std::array<uint8_t, 8> p = {0x53, 0x46, 0x43, 0x00, 0x02, 0x00, 0x00, 0x00};
+TEST(ValidatePreamble, MajorVersion1_Error) {
+    // Major version 1 is not supported.
+    std::array<uint8_t, 8> p = {0x53, 0x46, 0x43, 0x00, 0x01, 0x00, 0x00, 0x00};
     auto res = validate_preamble(p);
     ASSERT_FALSE(res.has_value());
     EXPECT_EQ(res.error().code, ErrorCode::UnsupportedMajorVersion);
 }
 
-TEST(ValidatePreamble, MajorVersion0_Error) {
-    // Version 0 is also invalid.
-    std::array<uint8_t, 8> p = {0x53, 0x46, 0x43, 0x00, 0x00, 0x00, 0x00, 0x00};
+TEST(ValidatePreamble, MajorVersion2_Error) {
+    // Major version 2 is not supported.
+    std::array<uint8_t, 8> p = {0x53, 0x46, 0x43, 0x00, 0x02, 0x00, 0x00, 0x00};
     auto res = validate_preamble(p);
     ASSERT_FALSE(res.has_value());
     EXPECT_EQ(res.error().code, ErrorCode::UnsupportedMajorVersion);
@@ -268,21 +268,6 @@ TEST(ValidateChunkAlgo, IdentityMatch_OK) {
     EXPECT_TRUE(res.has_value());
 }
 
-TEST(ValidateChunkAlgo, DeprecatedZstd_NormalisedToZstd_OK) {
-    // Header says 0x01 (zstd); chunk says 0x02 (deprecated zstd).
-    // After normalisation both are 0x01 → no mismatch.
-    FileUuid uuid{};
-    auto hdr             = make_test_global_header(uuid);
-    hdr.compression_algo = 0x01;
-    hdr.erasure_algo     = 0x00;
-
-    auto chunk                      = make_valid_parsed_chunk(0, uuid, {});
-    chunk.header.compression_algo   = 0x02;  // deprecated → normalised to 0x01
-    chunk.header.erasure_algo       = 0x00;
-
-    auto res = validate_chunk_algo(chunk, hdr);
-    EXPECT_TRUE(res.has_value());
-}
 
 TEST(ValidateChunkAlgo, CompressMismatch_Error) {
     FileUuid uuid{};
@@ -291,7 +276,7 @@ TEST(ValidateChunkAlgo, CompressMismatch_Error) {
     hdr.erasure_algo     = 0x00;
 
     auto chunk                      = make_valid_parsed_chunk(0, uuid, {});
-    chunk.header.compression_algo   = 0x03;  // brotli ≠ identity
+    chunk.header.compression_algo   = 0x02;  // brotli ≠ identity
 
     auto res = validate_chunk_algo(chunk, hdr);
     ASSERT_FALSE(res.has_value());

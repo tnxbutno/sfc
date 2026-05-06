@@ -472,6 +472,7 @@ if(SFC_FUZZ)
         src/split_encoder.cpp src/split_decoder.cpp src/directory.cpp
     )
     target_include_directories(sfc_lib_fuzz PUBLIC include)
+    target_link_directories(sfc_lib_fuzz PUBLIC ${SFC_COMP_LIBRARY_DIRS})
     target_link_libraries(sfc_lib_fuzz PUBLIC blake3 ${SFC_COMP_LIBS})
     target_include_directories(sfc_lib_fuzz SYSTEM PRIVATE ${SFC_COMP_INCLUDE_DIRS})
     target_compile_options(sfc_lib_fuzz PRIVATE ${SFC_FUZZ_FLAGS})

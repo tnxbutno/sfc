@@ -6,9 +6,8 @@
 /// Supports:
 ///   0x00 — identity (no-op)
 ///   0x01 — zstd (MUST)
-///   0x02 — deprecated synonym for 0x01 (MUST decode as zstd)
-///   0x03 — brotli (SHOULD)
-///   0x04 — lz4 frame format (SHOULD)
+///   0x02 — brotli (SHOULD)
+///   0x03 — lz4 frame format (SHOULD)
 ///
 /// All functions are pure (no side effects).
 
@@ -25,16 +24,11 @@ namespace sfc {
 // Normalization
 // ---------------------------------------------------------------------------
 
-/// @brief Normalize a compression algorithm ID per Section 7.1.
-///
-/// Algorithm 0x02 (deprecated "zstd level 19") MUST be treated identically
-/// to 0x01 (zstd).  All other IDs are returned unchanged.
+/// @brief Parse a raw compression algorithm byte from the wire.
 ///
 /// @param id Raw algorithm byte from the wire.
-/// @return Normalized CompressionAlgo value.
+/// @return Corresponding CompressionAlgo value.
 [[nodiscard]] constexpr CompressionAlgo normalize_compression_id(uint8_t id) noexcept {
-    // 0x02 is a deprecated synonym; normalise to 0x01 before any comparison.
-    if (id == 0x02) return CompressionAlgo::Zstd;
     return static_cast<CompressionAlgo>(id);
 }
 

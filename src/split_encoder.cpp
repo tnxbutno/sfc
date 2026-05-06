@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <format>
+#include <numeric>
 
 namespace sfc {
 
@@ -34,15 +35,38 @@ namespace sfc {
 // Internal helpers (file-local)
 // ---------------------------------------------------------------------------
 
+/// Compute the SFC/P1 priority list per §12.4 (mirrors encoder.cpp).
+static Result<std::vector<uint32_t>>
+resolve_p1_priority(uint16_t format_id, uint32_t n,
+                    const std::vector<uint32_t>& override_list, bool p1_flag) {
+    if (!p1_flag) return override_list;
+    if (!override_list.empty()) return override_list;
+
+    const auto fid = static_cast<InnerFormatId>(format_id);
+    if (fid == InnerFormatId::Jpeg2000 || fid == InnerFormatId::JpegXl) {
+        return std::unexpected(SfcError{
+            ErrorCode::ProfileMustViolation,
+            "SFC/P1 Class P format (JPEG 2000/XL): priority_list must be provided (§12.4)"
+        });
+    }
+    if (fid == InnerFormatId::JpegBaseline) {
+        const uint32_t count = (n + 9) / 10;
+        std::vector<uint32_t> list(count);
+        std::iota(list.begin(), list.end(), 0u);
+        return list;
+    }
+    return std::vector<uint32_t>{};
+}
+
 /// Write the 8-byte SFC preamble (magic + major/minor version) into out.
 static void append_preamble(std::vector<uint8_t>& out) {
     // "SFC\0"
     out.push_back(0x53); out.push_back(0x46);
     out.push_back(0x43); out.push_back(0x00);
-    // major version 1 (LE uint16)
+    // major version 0 (LE uint16)
+    out.push_back(0x00); out.push_back(0x00);
+    // minor version 1 (LE uint16)
     out.push_back(0x01); out.push_back(0x00);
-    // minor version 8 (LE uint16)
-    out.push_back(0x08); out.push_back(0x00);
 }
 
 /// Build a ChunkHeader for the given chunk index and type.
@@ -151,7 +175,13 @@ encode_split(std::span<const uint8_t> content,
     ghdr.flags = params.flags |
                  (1u << static_cast<uint16_t>(FlagBit::SplitTransport)) |
                  (1u << static_cast<uint16_t>(FlagBit::P2Split));
-    ghdr.priority_count = 0;
+
+    // Priority list per §12.4.
+    const bool p1_flag = (params.flags & (1u << static_cast<uint16_t>(FlagBit::P1Image))) != 0;
+    auto prio_res = resolve_p1_priority(params.format_id, n, params.priority_list, p1_flag);
+    if (!prio_res) return std::unexpected(prio_res.error());
+    ghdr.priority_list  = std::move(*prio_res);
+    ghdr.priority_count = static_cast<uint16_t>(ghdr.priority_list.size());
     ghdr.inner_filename.fill(0);
     const size_t fname_len = std::min(params.filename.size(), size_t(254));
     std::copy_n(params.filename.begin(), fname_len, ghdr.inner_filename.begin());
@@ -179,8 +209,14 @@ encode_split(std::span<const uint8_t> content,
     if (auto r = add_meta_tlv(TlvTag::kSoftware,    params.metadata.software);    !r) return std::unexpected(r.error());
     if (auto r = add_meta_tlv(TlvTag::kComment,     params.metadata.comment);     !r) return std::unexpected(r.error());
 
+    // Validate before serializing (catches field constraint violations early).
+    if (auto v = validate_global_header(ghdr); !v) return std::unexpected(v.error());
+
     // Serialize header region (H+4 bytes) — shared across all segments.
-    auto header_region = serialize_global_header(ghdr);
+    // Fails if priority list + TLV would push H above 65,536 bytes (§4.5 rule g).
+    auto header_region_res = serialize_global_header(ghdr);
+    if (!header_region_res) return std::unexpected(header_region_res.error());
+    auto& header_region = *header_region_res;
 
     // --- Step 6: serialize all N+M chunks ---
     const uint32_t total_chunks = n + params.m;

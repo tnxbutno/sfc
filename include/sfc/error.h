@@ -46,6 +46,8 @@ enum class ErrorCode : uint32_t {
     MissingGlobalHeader             = 1028,
     FieldBelowMinimum               = 1029,
     FieldAboveMaximum               = 1030,
+    SplitTransportWithoutP2         = 1031,
+    NonZeroErasureAlgoWithMZero     = 1032,
 
     // --- Chunk-level errors (decoder SHOULD discard chunk, continue) ---
     ChunkBlake3Failure              = 2001,

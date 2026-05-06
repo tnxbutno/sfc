@@ -209,11 +209,10 @@ inline std::string_view format_id_name(uint16_t id) {
 
 inline std::string_view compression_algo_name(uint8_t algo) {
     switch (static_cast<sfc::CompressionAlgo>(algo)) {
-        case sfc::CompressionAlgo::Identity:       return "none";
-        case sfc::CompressionAlgo::Zstd:           return "zstd";
-        case sfc::CompressionAlgo::ZstdDeprecated: return "zstd (deprecated)";
-        case sfc::CompressionAlgo::Brotli:         return "brotli";
-        case sfc::CompressionAlgo::Lz4Frame:       return "lz4";
+        case sfc::CompressionAlgo::Identity:  return "none";
+        case sfc::CompressionAlgo::Zstd:      return "zstd";
+        case sfc::CompressionAlgo::Brotli:    return "brotli";
+        case sfc::CompressionAlgo::Lz4Frame:  return "lz4";
         default:                                    return "unknown";
     }
 }

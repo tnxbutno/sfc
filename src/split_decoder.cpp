@@ -97,10 +97,11 @@ decode_split(std::span<const std::vector<uint8_t>> segments) {
         uint32_t H = read_u32_le(
             std::span<const uint8_t, 4>{seg.data() + 8, 4});
 
-        if (H + 4 < limits::kMinHeaderLength || H + 4 > limits::kMaxHeaderLength) {
+        if (H < limits::kMinHeaderLength || H > limits::kMaxHeaderLength) {
             return std::unexpected(SfcError{
                 ErrorCode::HeaderLengthOutOfBounds,
-                std::format("segment {}: H={} out of bounds", i, H)
+                std::format("segment {}: H={} out of bounds [{},{}]",
+                            i, H, limits::kMinHeaderLength, limits::kMaxHeaderLength)
             });
         }
         const size_t header_region_size = static_cast<size_t>(H) + 4;
@@ -253,8 +254,8 @@ decode_split(std::span<const std::vector<uint8_t>> segments) {
                          + total_chunk_bytes
                          + (trailer_verified ? 64u : 0u));
 
-    // Preamble: write "SFC\0" + version 1.8
-    const uint8_t preamble[8] = {0x53,0x46,0x43,0x00, 0x01,0x00, 0x08,0x00};
+    // Preamble: write "SFC\0" + version 0.1
+    const uint8_t preamble[8] = {0x53,0x46,0x43,0x00, 0x00,0x00, 0x01,0x00};
     virtual_file.insert(virtual_file.end(), preamble, preamble + 8);
 
     // Header region (shared; use segment 0's copy).

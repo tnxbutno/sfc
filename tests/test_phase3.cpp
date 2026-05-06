@@ -133,17 +133,12 @@ TEST(Compression, Normalize_0x01_IsZstd) {
     EXPECT_EQ(normalize_compression_id(0x01), CompressionAlgo::Zstd);
 }
 
-TEST(Compression, Normalize_0x02_BecomesZstd) {
-    // Key spec requirement §7.1: 0x02 MUST be treated identically to 0x01.
-    EXPECT_EQ(normalize_compression_id(0x02), CompressionAlgo::Zstd);
+TEST(Compression, Normalize_0x02_IsBrotli) {
+    EXPECT_EQ(normalize_compression_id(0x02), CompressionAlgo::Brotli);
 }
 
-TEST(Compression, Normalize_0x03_IsBrotli) {
-    EXPECT_EQ(normalize_compression_id(0x03), CompressionAlgo::Brotli);
-}
-
-TEST(Compression, Normalize_0x04_IsLz4) {
-    EXPECT_EQ(normalize_compression_id(0x04), CompressionAlgo::Lz4Frame);
+TEST(Compression, Normalize_0x03_IsLz4) {
+    EXPECT_EQ(normalize_compression_id(0x03), CompressionAlgo::Lz4Frame);
 }
 
 // ===========================================================================
@@ -211,23 +206,7 @@ TEST(Compression, Zstd_SizeMismatch_ReturnsError) {
 }
 
 // ===========================================================================
-// Compression — 0x02 is treated as zstd
-// ===========================================================================
-
-TEST(Compression, Deprecated0x02_DecompressesAsZstd) {
-    // Encode with 0x01, decode with 0x02 — must succeed (same algorithm).
-    std::vector<uint8_t> data = {0xDE, 0xAD, 0xBE, 0xEF};
-    auto compressed = compress(data, CompressionAlgo::Zstd);
-    ASSERT_TRUE(compressed.has_value());
-
-    // Decompress using the deprecated ID 0x02.
-    auto res = decompress(*compressed, CompressionAlgo::ZstdDeprecated, data.size());
-    ASSERT_TRUE(res.has_value()) << res.error().detail;
-    EXPECT_EQ(*res, data);
-}
-
-// ===========================================================================
-// Compression — brotli (0x03) round-trip
+// Compression — brotli (0x02) round-trip
 // ===========================================================================
 
 TEST(Compression, Brotli_RoundTrip) {
@@ -243,7 +222,7 @@ TEST(Compression, Brotli_RoundTrip) {
 }
 
 // ===========================================================================
-// Compression — lz4 frame (0x04) round-trip
+// Compression — lz4 frame (0x03) round-trip
 // ===========================================================================
 
 TEST(Compression, Lz4_RoundTrip) {

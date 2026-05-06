@@ -115,7 +115,7 @@ Result<GlobalHeader> parse_global_header(std::span<const uint8_t> data) {
     return hdr;
 }
 
-std::vector<uint8_t> serialize_global_header(const GlobalHeader& hdr) {
+Result<std::vector<uint8_t>> serialize_global_header(const GlobalHeader& hdr) {
     // Build the variable portion first (priority list + TLV) to compute H.
     std::vector<uint8_t> var_part;
     for (uint32_t idx : hdr.priority_list) {
@@ -128,6 +128,15 @@ std::vector<uint8_t> serialize_global_header(const GlobalHeader& hdr) {
     // H = fixed body (331 bytes from UUID onwards) + var_part.
     // Fixed body (UUID→priority_count) = 335 - 4 = 331 bytes.
     const uint32_t h = static_cast<uint32_t>(kGlobalHeaderFixedBodySize + var_part.size());
+
+    // §4.5 rule g: H must not exceed 65,536 bytes.
+    if (h > limits::kMaxHeaderLength) {
+        return std::unexpected(SfcError{
+            ErrorCode::HeaderLengthOutOfBounds,
+            std::format("computed H={} exceeds maximum {} (priority list + TLV too large)",
+                        h, limits::kMaxHeaderLength)
+        });
+    }
 
     // Total region = H + 4 bytes.
     std::vector<uint8_t> out;
@@ -174,10 +183,18 @@ std::vector<uint8_t> serialize_global_header(const GlobalHeader& hdr) {
     // Variable part.
     out.insert(out.end(), var_part.begin(), var_part.end());
 
-    return out;
+    return out;  // Result<std::vector<uint8_t>>
 }
 
 VoidResult validate_global_header(const GlobalHeader& hdr) {
+    // §4.6: Flags bits 1-3 are permanently reserved; MUST be zero.
+    constexpr uint16_t kReservedFlagsMask = 0b0000'0000'0000'1110u;
+    if (hdr.flags & kReservedFlagsMask) {
+        return std::unexpected(SfcError{
+            ErrorCode::ProfileMustViolation,
+            std::format("Flags bits 1-3 must be zero; got flags=0x{:04X}", hdr.flags)
+        });
+    }
     // Inner File Size ≤ 1 TB (§17.3).
     if (hdr.inner_file_size > limits::kMaxInnerFileSize) {
         return std::unexpected(SfcError{
@@ -237,6 +254,13 @@ VoidResult validate_global_header(const GlobalHeader& hdr) {
         return std::unexpected(SfcError{
             ErrorCode::ErasureNoneWithMGreaterZero,
             "erasure algo 0x00 but M>0"
+        });
+    }
+    // Non-zero erasure algo with M=0 (§6.1).
+    if (hdr.erasure_algo != 0x00 && hdr.m == 0) {
+        return std::unexpected(SfcError{
+            ErrorCode::NonZeroErasureAlgoWithMZero,
+            std::format("erasure algo 0x{:02X} but M=0", hdr.erasure_algo)
         });
     }
     // inner_file_size == 0 requires N == 1 (§17.3).

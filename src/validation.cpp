@@ -4,7 +4,6 @@
 #include "sfc/validation.h"
 #include "sfc/blake3_hash.h"
 #include "sfc/byte_utils.h"
-#include "sfc/compression.h"
 
 #include <format>
 
@@ -21,7 +20,7 @@ VoidResult validate_preamble(std::span<const uint8_t, 8> preamble) {
         });
     }
 
-    // D1b: major version must be 1 (bytes [4..5], LE uint16).
+    // D1b: major version must be 0 (bytes [4..5], LE uint16).
     const uint16_t major = read_u16_le(
         std::span<const uint8_t, 2>{preamble.data() + 4, 2});
     if (major != kMajorVersion) {
@@ -107,13 +106,8 @@ VoidResult validate_chunk_index(const ParsedChunk& chunk, const GlobalHeader& hd
 }
 
 VoidResult validate_chunk_algo(const ParsedChunk& chunk, const GlobalHeader& hdr) {
-    // D4d: algorithm IDs must match after normalisation (0x02 → 0x01).
-    const uint8_t chunk_comp = static_cast<uint8_t>(
-        normalize_compression_id(chunk.header.compression_algo));
-    const uint8_t hdr_comp = static_cast<uint8_t>(
-        normalize_compression_id(hdr.compression_algo));
-
-    if (chunk_comp != hdr_comp) {
+    // D4d: algorithm IDs must match exactly (§5.1).
+    if (chunk.header.compression_algo != hdr.compression_algo) {
         return std::unexpected(SfcError{
             ErrorCode::ChunkAlgoMismatch,
             std::format("chunk {} compression algo 0x{:02X} != header 0x{:02X}",

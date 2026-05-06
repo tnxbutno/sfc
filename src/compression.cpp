@@ -7,14 +7,14 @@
 
 #include "sfc/compression.h"
 
-// zstd — MUST support (0x01 / 0x02)
+// zstd — MUST support (0x01)
 #include <zstd.h>
 
-// brotli — SHOULD support (0x03)
+// brotli — SHOULD support (0x02)
 #include <brotli/decode.h>
 #include <brotli/encode.h>
 
-// lz4 — SHOULD support (0x04, LZ4 Frame format)
+// lz4 — SHOULD support (0x03, LZ4 Frame format)
 #include <lz4frame.h>
 
 #include <format>
@@ -48,7 +48,7 @@ static Result<std::vector<uint8_t>> identity_decompress(std::span<const uint8_t>
 }
 
 // ---------------------------------------------------------------------------
-// zstd (0x01 / 0x02)
+// zstd (0x01)
 // ---------------------------------------------------------------------------
 
 static Result<std::vector<uint8_t>> zstd_compress(std::span<const uint8_t> data) {
@@ -272,16 +272,11 @@ static Result<std::vector<uint8_t>> lz4_decompress(std::span<const uint8_t> data
 
 Result<std::vector<uint8_t>> compress(std::span<const uint8_t> data,
                                        CompressionAlgo algo) {
-    // Normalise 0x02 → 0x01 before dispatch.
-    const CompressionAlgo normalised =
-        normalize_compression_id(static_cast<uint8_t>(algo));
-
-    switch (normalised) {
+    switch (algo) {
         case CompressionAlgo::Identity:
             return identity_compress(data);
 
         case CompressionAlgo::Zstd:
-        case CompressionAlgo::ZstdDeprecated:  // after normalise, this is Zstd
             return zstd_compress(data);
 
         case CompressionAlgo::Brotli:
@@ -302,16 +297,11 @@ Result<std::vector<uint8_t>> compress(std::span<const uint8_t> data,
 Result<std::vector<uint8_t>> decompress(std::span<const uint8_t> data,
                                          CompressionAlgo algo,
                                          size_t expected_size) {
-    // Normalise 0x02 → 0x01 before dispatch (spec §7.1).
-    const CompressionAlgo normalised =
-        normalize_compression_id(static_cast<uint8_t>(algo));
-
-    switch (normalised) {
+    switch (algo) {
         case CompressionAlgo::Identity:
             return identity_decompress(data, expected_size);
 
         case CompressionAlgo::Zstd:
-        case CompressionAlgo::ZstdDeprecated:  // after normalise, this is Zstd
             return zstd_decompress(data, expected_size);
 
         case CompressionAlgo::Brotli:

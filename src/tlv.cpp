@@ -69,11 +69,17 @@ Result<std::vector<TlvField>> parse_tlv_fields(std::span<const uint8_t> data) {
                     std::format("kChunkOffsetIndex: length {} is not a multiple of 8", len)
                 });
             }
-            // Metadata string tags: max kMaxMetadataStringLength bytes.
+            // Metadata string tags: L=0 and L>4096 are both format errors (§3.2).
             const bool is_metadata_tag =
                 tag == TlvTag::kAuthor      || tag == TlvTag::kDescription ||
                 tag == TlvTag::kLocation    || tag == TlvTag::kSoftware    ||
                 tag == TlvTag::kComment;
+            if (is_metadata_tag && len == 0) {
+                return std::unexpected(SfcError{
+                    ErrorCode::KnownTlvUnexpectedLength,
+                    std::format("metadata TLV tag 0x{:04X}: L=0 is not permitted", tag)
+                });
+            }
             if (is_metadata_tag && len > limits::kMaxMetadataStringLength) {
                 return std::unexpected(SfcError{
                     ErrorCode::FieldAboveMaximum,

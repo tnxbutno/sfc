@@ -108,7 +108,7 @@ static GlobalHeader make_min_global_header() {
 
 TEST(GlobalHeader, RoundTrip_Minimal) {
     auto hdr   = make_min_global_header();
-    auto bytes = serialize_global_header(hdr);
+    auto bytes = *serialize_global_header(hdr);
 
     auto res = parse_global_header(bytes);
     ASSERT_TRUE(res.has_value()) << res.error().detail;
@@ -131,7 +131,7 @@ TEST(GlobalHeader, RoundTrip_WithPriorityList) {
     hdr.priority_count = 2;
     hdr.priority_list  = {2, 0};
 
-    auto bytes = serialize_global_header(hdr);
+    auto bytes = *serialize_global_header(hdr);
     auto res   = parse_global_header(bytes);
     ASSERT_TRUE(res.has_value()) << res.error().detail;
     ASSERT_EQ(res->priority_count, 2u);
@@ -147,7 +147,7 @@ TEST(GlobalHeader, RoundTrip_WithTlvField) {
     f.value = {0xDE, 0xAD};
     hdr.tlv_fields = {f};
 
-    auto bytes = serialize_global_header(hdr);
+    auto bytes = *serialize_global_header(hdr);
     auto res   = parse_global_header(bytes);
     ASSERT_TRUE(res.has_value()) << res.error().detail;
     ASSERT_EQ(res->tlv_fields.size(), 1u);

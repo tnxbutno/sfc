@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <format>
+#include <numeric>
 
 namespace sfc {
 
@@ -29,15 +30,48 @@ namespace sfc {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
+/// Compute the SFC/P1 priority list per §12.4.
+/// Returns error for Class P without a caller-supplied list.
+/// Returns auto-computed list for Class S (JPEG Baseline).
+/// Returns override_list unchanged if non-empty.
+/// Returns empty list (P=0) for Class Q/I/N/Unknown.
+static Result<std::vector<uint32_t>>
+resolve_p1_priority(uint16_t format_id, uint32_t n,
+                    const std::vector<uint32_t>& override_list, bool p1_flag) {
+    if (!p1_flag) return override_list;  // no P1 declared — use whatever caller gave (may be empty)
+
+    if (!override_list.empty()) return override_list;  // explicit override wins
+
+    const auto fid = static_cast<InnerFormatId>(format_id);
+
+    if (fid == InnerFormatId::Jpeg2000 || fid == InnerFormatId::JpegXl) {
+        // Class P: codestream inspection required; caller MUST supply priority_list.
+        return std::unexpected(SfcError{
+            ErrorCode::ProfileMustViolation,
+            "SFC/P1 Class P format (JPEG 2000/XL): priority_list must be provided (§12.4)"
+        });
+    }
+
+    if (fid == InnerFormatId::JpegBaseline) {
+        // Class S: auto-compute indices 0..ceil(N*0.1)-1.
+        const uint32_t count = (n + 9) / 10;  // ceil(N/10)
+        std::vector<uint32_t> list(count);
+        std::iota(list.begin(), list.end(), 0u);
+        return list;
+    }
+
+    return std::vector<uint32_t>{};  // Class Q/I/N: no mandatory priority
+}
+
 /// Write the 8-byte preamble (magic + version) into out.
 static void append_preamble(std::vector<uint8_t>& out) {
     // "SFC\0"
     out.push_back(0x53); out.push_back(0x46);
     out.push_back(0x43); out.push_back(0x00);
-    // Major version 1 (LE uint16)
+    // Major version 0 (LE uint16)
+    out.push_back(0x00); out.push_back(0x00);
+    // Minor version 1 (LE uint16)
     out.push_back(0x01); out.push_back(0x00);
-    // Minor version 8 (LE uint16)
-    out.push_back(0x08); out.push_back(0x00);
 }
 
 /// Build a ChunkHeader for the given chunk index and type.
@@ -158,7 +192,13 @@ Result<std::vector<uint8_t>> encode(std::span<const uint8_t> content,
     ghdr.erasure_algo    = erasure_algo;
     ghdr.compression_algo= comp_algo;
     ghdr.flags           = params.flags;  // caller-supplied profile/flag bits
-    ghdr.priority_count  = 0;
+
+    // Priority list per §12.4.
+    const bool p1_flag = (params.flags & (1u << static_cast<uint16_t>(FlagBit::P1Image))) != 0;
+    auto prio_res = resolve_p1_priority(params.format_id, n, params.priority_list, p1_flag);
+    if (!prio_res) return std::unexpected(prio_res.error());
+    ghdr.priority_list  = std::move(*prio_res);
+    ghdr.priority_count = static_cast<uint16_t>(ghdr.priority_list.size());
 
     // Fill inner filename field (255 bytes, null-padded).
     ghdr.inner_filename.fill(0);
@@ -190,10 +230,13 @@ Result<std::vector<uint8_t>> encode(std::span<const uint8_t> content,
     if (auto r = add_meta_tlv(TlvTag::kSoftware,    params.metadata.software);    !r) return std::unexpected(r.error());
     if (auto r = add_meta_tlv(TlvTag::kComment,     params.metadata.comment);     !r) return std::unexpected(r.error());
 
-    // Serialize header region (H+4 bytes).
-    auto header_region = serialize_global_header(ghdr);
-    // Update H field now that we know the size.
-    // (serialize_global_header already computes the correct H)
+    // Validate before serializing (catches field constraint violations early).
+    if (auto v = validate_global_header(ghdr); !v) return std::unexpected(v.error());
+
+    // Serialize header region (H+4 bytes); fails if priority+TLV causes H > 65,536.
+    auto header_region_res = serialize_global_header(ghdr);
+    if (!header_region_res) return std::unexpected(header_region_res.error());
+    auto& header_region = *header_region_res;
 
     // --- Assemble file ---
     std::vector<uint8_t> file_bytes;

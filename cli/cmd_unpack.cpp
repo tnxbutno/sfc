@@ -108,9 +108,8 @@ void setup_unpack(CLI::App& app) {
                             std::filesystem::path(out_dir) / f.path);
                     // Reject paths that escape the output directory (§4.8 rule d).
                     const std::string dest_str = dest_path.string();
-                    const std::string root_str = canonical_root.string();
-                    if (dest_str.size() < root_str.size() ||
-                        dest_str.substr(0, root_str.size()) != root_str) {
+                    const auto rel = dest_path.lexically_relative(canonical_root);
+                    if (rel.empty() || *rel.begin() == "..") {
                         std::println(stderr,
                             "sfc unpack: rejected path traversal attempt: {}", f.path);
                         std::exit(1);
@@ -135,6 +134,9 @@ void setup_unpack(CLI::App& app) {
                         const auto& raw = it->second.inner_filename;
                         const auto end = std::find(raw.begin(), raw.end(), uint8_t{0});
                         std::string name(raw.begin(), end);
+                        // Strip any directory components — §4.8 forbids '/' and '\'
+                        // in inner_filename, but an adversarial encoder could violate this.
+                        name = std::filesystem::path(name).filename().string();
                         return name.empty() ? cli::format_uuid(entry.uuid) : name;
                     };
 

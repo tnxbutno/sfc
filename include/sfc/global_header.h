@@ -16,7 +16,7 @@
 ///   [329]1    Erasure algorithm ID
 ///   [330]1    Compression algorithm ID
 ///   [331]2    Flags (LE uint16)
-///   [332]2    Priority count P (LE uint16) — NOTE: spec offset 333 = after format+4 padding?
+///   [333] 2    Priority count P (LE uint16)
 ///   [335] 4*P Priority chunk index list
 ///   [335+4P] var TLV extension fields
 
@@ -69,13 +69,14 @@ parse_global_header(std::span<const uint8_t> data);
 /// @brief Serialize a GlobalHeader to bytes.
 ///
 /// Returns the Global Header Region (H+4 bytes). Does NOT include the 8-byte preamble.
+/// Fails with HeaderLengthOutOfBounds if the computed H exceeds 65,536 bytes (§4.5 rule g).
 ///
 /// @param hdr GlobalHeader to serialize.
-/// @return Serialized bytes.
-[[nodiscard]] std::vector<uint8_t>
+/// @return Serialized bytes or error.
+[[nodiscard]] Result<std::vector<uint8_t>>
 serialize_global_header(const GlobalHeader& hdr);
 
-/// @brief Validate a parsed GlobalHeader against protocol limits (§17.3).
+/// @brief Validate a parsed GlobalHeader against protocol limits (§18.3).
 ///
 /// Checks: N,M,S within limits; S even; N+M ≤ 65535; priority list valid;
 /// erasure 0x00 with M>0; inner_file_size==0 with N!=1.

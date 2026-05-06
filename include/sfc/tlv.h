@@ -44,7 +44,6 @@ serialize_tlv_fields(const std::vector<TlvField>& fields);
 namespace TlvTag {
     inline constexpr uint16_t kChunkOffsetIndex = 0x0020; ///< SFC/P3 (uint64[])
     inline constexpr uint16_t kOriginalFormatId = 0x0030; ///< SFC/P4 (uint16 LE)
-    inline constexpr uint16_t kDeprecatedAlgo   = 0x0040; ///< Deprecated, skip
 
     // Metadata tags (§3.2): UTF-8 strings, max 4096 bytes each.
     inline constexpr uint16_t kAuthor      = 0x0100; ///< Author name
@@ -58,7 +57,6 @@ namespace TlvTag {
 [[nodiscard]] constexpr bool is_known_tag(uint16_t tag) noexcept {
     return tag == TlvTag::kChunkOffsetIndex ||
            tag == TlvTag::kOriginalFormatId ||
-           tag == TlvTag::kDeprecatedAlgo   ||
            tag == TlvTag::kAuthor           ||
            tag == TlvTag::kDescription      ||
            tag == TlvTag::kLocation         ||

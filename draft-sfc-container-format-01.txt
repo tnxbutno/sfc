@@ -1,7 +1,7 @@
 
 Network Working Group                                      V. Krivchikov
 Internet-Draft                                               Independent
-Intended status: Standards Track           draft-sfc-container-format-00
+Intended status: Standards Track           draft-sfc-container-format-01
 Expires: 5 November 2026                                   5 May 2026
 
 
@@ -115,6 +115,7 @@ Table of Contents
    10. Encoder Behavior (Core)
        10.1. Chunking Strategy
        10.2. Encoder Warnings (Non-Normative Guidance)
+       10.3. Encoder Conformance Checklist
    11. Decoder Behavior (Core)
 
    Part II: Profiles
@@ -139,7 +140,7 @@ Table of Contents
        16.3. File Entry Format
        16.4. Inner Content Layout
        16.5. Chunk Allocation
-       16.6. Encoder Behavior
+       16.6. Encoder Behavior (SFC/P5)
        16.7. Full Extraction
        16.8. Partial Extraction
        16.9. Trust Model
@@ -151,9 +152,10 @@ Table of Contents
        18.1. Integrity Without Confidentiality
        18.2. Tampering Detection Under Trusted Metadata
        18.3. Denial of Service
-       18.4. Path Traversal
+       18.4. Path Traversal and Platform Safety
        18.5. Provisional Chunk Buffering
    19. IANA Considerations
+       19.1. Media Type Registration: application/sfc
    20. References
        20.1. Normative References
        20.2. Informative References
@@ -205,7 +207,7 @@ Part I: Core Specification
    position identifier and integrity hash, enabling a receiver to
    recognize and verify individual chunks without any external
    resource.  Full reconstruction additionally requires the Global
-   Header; this distinction is fundamental and described in Section 2.
+   Header; this is described in Section 2.
 
 1.2.  Design Goals
 
@@ -250,8 +252,8 @@ Part I: Core Specification
 
         Conforming Core decoder: satisfies all MUST requirements in
         Part I of this specification, including mandatory support for
-        algorithms 0x00, 0x01 (zstd), and 0x02 (deprecated synonym
-        for 0x01).  Section 11 defines the complete conformance
+        algorithms 0x00 and 0x01 (zstd).  Section 11 defines the
+        complete conformance
         checklist.
 
         Throughout this document, "conforming decoder" means a
@@ -370,8 +372,7 @@ Part I: Core Specification
    Conforming Core Decoder:
       A decoder implementation that satisfies all MUST-level
       requirements in Part I of this specification, including support
-      for compression algorithms 0x00, 0x01, and 0x02 (0x02 is a
-      deprecated synonym for 0x01; Section 7.1).  See Section 11.
+      for compression algorithms 0x00 and 0x01 (zstd).  See Section 11.
       When this document says "conforming decoder" without further
       qualification, it means a Conforming Core Decoder.
 
@@ -429,7 +430,7 @@ Part I: Core Specification
    o  Its compressed payload length.
    o  Independent hash-based integrity verification of its own bytes.
 
-   Additionally (always present in version 1.x):
+   Additionally (present in version 0.1):
    o  Compression algorithm ID (chunk header byte 32).
    o  Erasure coding algorithm ID (chunk header byte 33).
    o  This enables decompression of that individual chunk's payload
@@ -469,15 +470,15 @@ Part I: Core Specification
    ----------------------  ----------  ---------------------------------
    Interop normative       MUST/MUST   3, 4, 5, 6.3, 6.4, 7.3, 8.1,
    (decoder behavior)      NOT         8.2, 9, 11
-   Interop normative       MUST/MUST   4.8, 5.5, 9.5, 16.6
+   Interop normative       MUST/MUST   4.8, 5.5, 9.5, 10.3
    (encoder behavior)      NOT
-   Encoder guidance        SHOULD/     6.2, 7.2, 10.1, 12.4
+   Encoder guidance        SHOULD/     6.2, 7.2, 10.1
    (best practice)         RECOMMENDED
-   Advisory                MAY         10.2, 13.2, 15
+   Advisory                MAY         10.2, 13.2
    (no interop impact)
-   Profile normative       MUST/MUST   12.3, 13.1, 13.3, 13.4,
-   (Profile implementors)  NOT         13.5, 13.6, 14, 16.6,
-                                       16.7, 16.8
+   Profile normative       MUST/MUST   12.3, 12.4, 13.1, 13.3, 13.4,
+   (Profile implementors)  NOT         13.5, 13.6, 14, 15, 16.6,
+                                       16.7, 16.8, 16.9
 
 
 3.  File Structure
@@ -489,10 +490,10 @@ Part I: Core Specification
       Offset  Length  Value
       ------  ------  -----
       0       4       0x53 0x46 0x43 0x00   (ASCII "SFC\0")
-      4       2       Major version (uint16, little-endian) = 1
-      6       2       Minor version (uint16, little-endian) = 8
+      4       2       Major version (uint16, little-endian) = 0
+      6       2       Minor version (uint16, little-endian) = 1
 
-   This specification defines version 1.8.  Decoders MUST reject
+   This specification defines version 0.1.  Decoders MUST reject
    files with a major version greater than they implement.  Decoders
    SHOULD accept files with a higher minor version, treating unknown
    TLV fields per the TLV Contract (Section 3.2).  For SFC/P2
@@ -500,19 +501,18 @@ Part I: Core Specification
    Section 13.5 applies: all segments MUST have identical major
    AND minor version numbers.
 
-   Minor version compatibility guarantee: within major version 1,
-   each minor version MUST be backward-compatible with all lower
-   minor versions in Core semantics.  A new minor version MUST NOT
-   change the meaning of any existing known TLV tag or existing
-   assigned field.  It MAY add new TLV tags and new Profile bit
-   assignments in bits 9-15 of the Flags field via formal
-   reassignment.  It MAY also assign semantics to currently-reserved
-   bytes in chunk headers (chunk header offsets 34-47) via formal
-   reassignment.
+   Minor version compatibility guarantee: within major version 0,
+   any future minor version MUST NOT change the meaning of any
+   existing known TLV tag or any existing assigned field in Core
+   semantics.  A future minor version MAY add new TLV tags and
+   new Profile bit assignments in bits 9-15 of the Flags field
+   via formal reassignment.  It MAY also assign semantics to
+   currently-reserved bytes in chunk headers (chunk header offsets
+   34-47) via formal reassignment.
 
    Reserved bytes and forward compatibility: currently-reserved bytes
-   in chunk headers (offsets 34-47 in version 1.8) MUST be zero when
-   encoding for version 1.8.  When a decoder encounters a file with
+   in chunk headers (offsets 34-47 in version 0.1) MUST be zero when
+   encoding for version 0.1.  When a decoder encounters a file with
    a higher minor version than it implements and finds non-zero bytes
    in positions that were reserved in its implemented version, it
    MUST NOT treat this as a format error; instead it MUST treat those
@@ -523,7 +523,7 @@ Part I: Core Specification
    zero.
 
    Reserved bits 1-3 of the Flags field are reserved permanently
-   within major version 1 and MUST remain zero in all minor versions.
+   within major version 0 and MUST remain zero in all minor versions.
 
 3.2.  Global Header and TLV Contract
 
@@ -544,7 +544,7 @@ Part I: Core Specification
       325     4       Nominal chunk size S in bytes (uint32 LE)
       329     1       Erasure coding algorithm ID (Section 6.1)
       330     1       Compression algorithm ID (Section 7.1)
-      331     2       Flags and Profile declarations (Section 4.6)
+      331     2       Flags and Profile declarations (uint16 LE; Section 4.6)
       333     2       Priority chunk count P (uint16 LE)
       335     4*P     Priority chunk index list (uint32 LE each)
       335+4P  var     TLV extension fields
@@ -571,15 +571,13 @@ Part I: Core Specification
    Known TLV tags:
 
       0x0020 (uint64[] L=8*(N+M)): SFC/P3 chunk offset index.
+                                   Requires SFC/P3 Profile bit (bit 6).
+                                   Encoders MUST NOT include this tag
+                                   unless the SFC/P3 Profile bit is set.
       0x0030 (uint16 LE, L=2):   SFC/P4 original inner format ID.
-      0x0040 (uint8, L=1):       Deprecated.  In earlier drafts this
-                                 TLV activated headerless-compatible
-                                 mode.  As of draft-18, chunk header
-                                 bytes 32-33 always carry algorithm
-                                 IDs (Section 5.1); this TLV is no
-                                 longer necessary.  Encoders SHOULD
-                                 NOT emit it.  Decoders MUST skip it
-                                 without error if present.
+                                   Requires SFC/P4 Profile bit (bit 7).
+                                   Encoders MUST NOT include this tag
+                                   unless the SFC/P4 Profile bit is set.
 
    User metadata tags (UTF-8 encoded strings, L MUST NOT exceed 4096):
 
@@ -602,21 +600,17 @@ Part I: Core Specification
       0x0104 (UTF-8, L<=4096):   Comment.  Free-form note.
 
    All metadata tags are OPTIONAL.  Encoders MUST NOT emit a metadata
-   tag with an empty value (L=0).  Decoders SHOULD skip metadata tags
-   with L=0 as benign unknown extensions (per rule c above) rather
-   than treating them as hard errors.
-   Decoders encountering a metadata tag with L > 4096 MUST reject the
-   file with FieldAboveMaximum.  All metadata values MUST be valid
+   tag with an empty value (L=0) or with L > 4096.  Decoders MUST
+   treat a known metadata tag with L=0 or L > 4096 as a format error
+   per rule (f) and halt.  All metadata values MUST be valid
    UTF-8; decoders MAY validate encoding but are not required to.
    Metadata tags are subject to the standard TLV rules (ascending
    order, at most once each).
 
-   Note: SFC/P2 segment-specific metadata (segment index, total
-   segment count, terminal flag) is carried in a dedicated Segment
-   Header structure (Section 13.1), NOT in TLV fields.  TLV tags
-   0x0010-0x0012 from earlier drafts are reserved and MUST NOT be
-   used.  Decoders encountering these tags MUST treat them as
-   unknown tags and skip them per rule c.
+   Note: TLV tags 0x0010-0x0012 are permanently reserved and MUST
+   NOT be used.  Decoders encountering these tags MUST skip them
+   silently without failing (as if they were unknown tags per rule c),
+   because they may appear in files produced by older implementations.
 
    Normative TLV rules:
 
@@ -630,9 +624,10 @@ Part I: Core Specification
        tags MAY appear more than once; each occurrence ignored.
 
    d.  Encoders MUST serialize TLV fields in ascending type-tag
-       order.  Required for raw-byte identity of the Global Header
-       Region across SFC/P2 segments (segment-specific metadata is
-       carried in the Segment Header, not in TLV fields).
+       order.  This ordering is the canonical serialization of the
+       TLV fields and is required for raw-byte identity of the Global
+       Header Region across SFC/P2 segments (segment-specific
+       metadata is carried in the Segment Header, not in TLV fields).
 
    e.  Each TLV value region MUST NOT extend beyond the Global Header
        boundary.  Decoders MUST verify before reading TLV values.
@@ -685,10 +680,13 @@ Part I: Core Specification
    The BLAKE3 hash at offset 8 covers the Global Header Region.
    Decoders MUST verify this hash (D2c).
 
-   Note: bytes 4-7 were the N+M cross-check field in earlier drafts.
-   That field has been removed (N and M are already in the Global
-   Header).  Decoders MUST treat non-zero values in bytes 4-7 as a
-   format error for files with version <= 1.8.
+   The encoder timestamp at offset 40 is informational only.
+   Decoders MUST NOT validate or reject based on its value; zero
+   is a valid timestamp.
+
+   Note: bytes 4-7 are reserved.  Decoders MUST treat non-zero
+   values in bytes 4-7 as a format error for files with
+   version <= 0.1.
 
    In SFC/P2 Split Transport:
    o  Trailer MUST appear in the Terminal Segment only.
@@ -703,12 +701,12 @@ Part I: Core Specification
    Dependency group 1 — Pre-allocation:
       D1a. Magic bytes verified before any further parsing.
       D1b. Major version verified before reading header fields.
-      D1c. Header length H bounds-checked (Section 17.3) before
+      D1c. Header length H bounds-checked (Section 18.3) before
            allocating header buffer.
 
    Dependency group 2 — Global Header parsing:
       D2a. All fixed header fields parsed before TLV fields.
-      D2b. N, M, S validated against limits (Section 17.3) before
+      D2b. N, M, S validated against limits (Section 18.3) before
            any chunk memory is allocated.
       D2c. Trailer BLAKE3 hash verified before chunk processing.
            EXCEPTION: Deferred for SFC/P2 Non-Terminal Segments
@@ -727,7 +725,7 @@ Part I: Core Specification
 
       Provisional Chunks (passing D3a-D3e, not yet D4a-D4d) MUST
       NOT be attributed to any file and MUST be stored in a
-      segregated provisional buffer (Section 17.5).
+      segregated provisional buffer (Section 18.5).
 
       Optimization: decoders MAY deduplicate byte-identical chunks
       within the provisional buffer before the Global Header arrives.
@@ -737,7 +735,7 @@ Part I: Core Specification
       D4b. Chunk index range check: index in [0, N+M-1].
       D4c. Reserved byte check (Section 5.5).
       D4d. Algorithm ID check: bytes 32-33 match Global Header
-           algorithm fields after normalization (Section 5.1).
+           algorithm fields (Section 5.1).
       Chunks passing D4a-D4d are promoted to the working set.
 
    Dependency group 5 — Reconstruction:
@@ -821,7 +819,7 @@ Part I: Core Specification
       0x0023  JPEG XL
       0x0024  PNG (non-interlaced)
       0x0025  PNG (Adam7 interlaced)
-      0x0026  WebP
+      0x0026  WebP (baseline)
       0x0030  Fragmented MP4
       0x0031  Matroska / WebM
       0x0040  ZIP archive
@@ -849,7 +847,7 @@ Part I: Core Specification
    The Compression Algorithm ID applies uniformly to ALL chunk
    payloads without exception.  This includes Manifest chunks in
    SFC Directory files.  Per-chunk algorithm overrides are not
-   supported in version 1.8.
+   supported in version 0.1.
 
 4.5.  Chunk Count Fields and Inner File Size
 
@@ -896,20 +894,30 @@ Part I: Core Specification
        declare SFC/P1 (bit 4 not set) is permitted.  Decoders MUST
        NOT treat this as a format error.
 
+   g.  The priority list occupies 4·P bytes inside the Global Header.
+       Combined with all fixed fields (minimum 331 bytes) and TLV
+       fields, the total MUST NOT cause H to exceed 65,536 bytes.
+       Absent TLV fields, this limits P to at most 16,301
+       (floor((65,536 - 331) / 4) = 16,301).  TLV fields reduce this
+       bound further.  Encoders MUST verify this constraint before
+       serializing the header and report an error rather than produce
+       a file whose H exceeds the maximum.
+
 4.6.  Flags and Profile Declarations
 
    The 2-byte Flags field:
 
       Bit 0 (LSB): SPLIT_TRANSPORT — this file is a Split Segment.
-      Bits 1-3:    Reserved permanently in major version 1.
-                   MUST be zero on encoding.
+      Bits 1-3:    Reserved permanently in major version 0.
+                   MUST be zero on encoding.  Decoders MUST treat
+                   non-zero bits 1-3 as a format error and halt.
       Bit 4:       SFC/P1 (Image) — encoder claims conformance.
       Bit 5:       SFC/P2 (Split Transport) — encoder claims conformance.
       Bit 6:       SFC/P3 (HTTP Hints) — encoder claims conformance.
       Bit 7:       SFC/P4 (Preprocessing) — encoder claims conformance.
       Bit 8:       SFC/P5 (Directory) — encoder claims conformance.
       Bits 9-15:   Reserved for future profiles.  MUST be zero in
-                   version 1.8.  Decoders MUST ignore without failing.
+                   version 0.1.  Decoders MUST ignore without failing.
 
    A Profile bit indicates that the encoder claims conformance to
    that Profile's semantics, whether or not Profile-specific TLV
@@ -984,6 +992,10 @@ Part I: Core Specification
    c.  Apply sanitization regardless of encoder conformance.
    d.  Write output only within the designated output directory.
        Path traversal MUST NOT succeed even if sanitization fails.
+   e.  If the sanitized effective filename equals "." or "..", reject
+       with "inner filename is reserved path component".  Neither
+       "." nor ".." contains forbidden bytes, so rule (a) does not
+       catch them; this explicit check is required.
 
    For SFC Directory, Section 4.8 rules also apply to each path
    component in Manifest file entries (Section 16.3).
@@ -1001,36 +1013,28 @@ Part I: Core Specification
       24      4       Chunk type (uint32 LE):
                         0x00000001 = Data chunk
                         0x00000002 = Recovery chunk
-                        All other values: unknown (format error)
+                        All other values: unknown chunk type;
+                                          discard this chunk (Section 9.4)
       28      4       Compressed payload length (uint32 LE)
       32      1       Compression algorithm ID (uint8)
       33      1       Erasure coding algorithm ID (uint8)
       34      14      Reserved (MUST be zero; Section 5.5)
 
-   Bytes 32-33 always carry algorithm IDs in version 1.x.  In
-   version 1.8, the only valid compression IDs are 0x00-0x04 and
-   0x80+; the only valid erasure IDs are 0x00, 0x01, and 0x80+.
+   In version 0.1, bytes 32-33 carry algorithm IDs in every chunk;
+   the only valid compression IDs are 0x00-0x03 and 0x80+; the
+   only valid erasure IDs are 0x00, 0x01, and 0x80+.
    A decoder receiving a chunk without the Global Header MAY use
    bytes 32-33 to decompress that chunk's payload independently.
    This is the headerless decompression capability described in
    Section 2.2.
 
    When the Global Header IS available, decoders MUST verify that
-   bytes 32-33 match the Global Header's algorithm fields after
-   normalization: compression ID 0x02 MUST be treated as 0x01 for
-   this comparison (both are zstd per Section 7.1).  A mismatch
-   after normalization is a format error; the affected chunk MUST
-   be discarded.
-
-   Note on TLV 0x0040: this TLV is deprecated as of draft-18.
-   Chunk header bytes 32-33 now unconditionally carry algorithm IDs;
-   no activation signal is needed.  See Section 3.2 known TLV tags.
+   bytes 32-33 match the Global Header's algorithm fields.  A mismatch
+   is a format error; the affected chunk MUST be discarded.
 
    Encoders MUST write the correct algorithm IDs in bytes 32-33 of
    every chunk, matching the Global Header's compression and erasure
-   algorithm fields.  (In earlier drafts, standard-mode bytes 32-33
-   were required to be 0x00.  This has been changed in draft-18 to
-   enable universal headerless decompression.)
+   algorithm fields.
 
    Unknown chunk type: decoder MUST discard chunk and report "unknown
    chunk type" with chunk index and observed type value.  Such chunks
@@ -1072,6 +1076,11 @@ Part I: Core Specification
    corruption; the chunk MUST be discarded with error "chunk end
    marker invalid" (D3e).
 
+   The end marker enables fast chunk boundary detection by scanning
+   for the "/CHK" byte sequence without computing BLAKE3 hashes,
+   which is useful for recovery from partially corrupted streams.
+   BLAKE3 verification (D3d) remains mandatory regardless.
+
 5.4.  Recovery Chunks
 
    Recovery chunks follow the same physical structure as data chunks.
@@ -1083,8 +1092,7 @@ Part I: Core Specification
    o  Chunk Header offsets 34-47 (14 bytes).
       Note: offsets 32-33 are NOT reserved; they carry algorithm IDs
       in all modes (Section 5.1).
-   o  File Trailer (Section 3.4) offsets 4-7 (4 bytes, formerly the
-      N+M field).
+   o  File Trailer (Section 3.4) offsets 4-7 (4 bytes, reserved).
    o  File Trailer (Section 3.4) offsets 48-63 (16 bytes).
 
    Encoders MUST write zero bytes in all reserved fields.
@@ -1094,6 +1102,10 @@ Part I: Core Specification
    o  Report "non-zero reserved bytes" with location and byte offset.
    o  Discard the affected chunk, or halt if error is in Trailer.
    o  MUST NOT silently accept or ignore.
+
+   Note: bits 9-15 of the Flags field are explicitly exempt from
+   this rule per Section 4.6; they MUST be ignored without failing,
+   as they are reserved for future profile assignments.
 
 
 6.  Erasure Coding (Core)
@@ -1108,6 +1120,12 @@ Part I: Core Specification
    MUST report "erasure algorithm 0x00 with M > 0" and halt before
    any chunk processing.  Encoders MUST NOT produce such files.
 
+   Erasure algorithm ≠ 0x00 with M = 0 is also a format error: when
+   M = 0 no erasure coding is active, so a non-None algorithm ID is
+   inconsistent.  Decoders MUST report "non-zero erasure algorithm
+   with M=0" and halt.  Encoders MUST set the field to 0x00 when
+   M = 0 (Section 10.3).
+
    A decoder that does not implement a declared erasure algorithm
    MUST report "unsupported erasure algorithm: 0xXX" as a distinct
    error and MUST NOT produce any output for that file.  This is
@@ -1121,8 +1139,9 @@ Part I: Core Specification
    The REQUIRED algorithm is systematic Reed-Solomon over GF(2^16)
    with a Cauchy generator matrix.  Any N of the (N+M) total chunks
    suffice to reconstruct all N data chunks.  N+M MUST NOT exceed
-   65,535 (the maximum number of distinct non-zero elements in
-   GF(2^16)).
+   65,535.  This limit ensures the maximum column index M+N-1 fits
+   within the field (elements 0 to 65,535), and also provides one
+   unit of conservative margin.
 
    M selection guidance (non-normative):
 
@@ -1139,7 +1158,9 @@ Part I: Core Specification
    2.  For each UUID group:
        a.  Apply D3a-D3e to each chunk.  Discard invalids.
        b.  Buffer Provisional Chunks; defer D4a-D4d.
-       c.  Verify Global Header availability (Rule 4); if absent halt.
+       c.  Verify Global Header availability (Rule 4); if absent,
+           buffer all chunks as Provisional and defer reconstruction
+           until the Global Header arrives.
        d.  Apply D4a-D4d to Provisional Chunks; promote or discard.
        e.  Apply duplicate handling (Section 9.5).
        f.  Count valid chunks V (data + recovery in working set).
@@ -1151,11 +1172,18 @@ Part I: Core Specification
            each per Section 7.3; proceed to reassembly under
            Section 9.1 (if D2c passed) or Section 9.2 (if D2c
            deferred), step 2 in either case.  Recovery chunks
-           MUST NOT be included in the output.
+           carry RS parity and MUST NOT contribute bytes to the
+           assembled inner content stream.
        h.  Otherwise: decompress all chunks in the working set per
-           Section 7.3 to obtain S-byte uncompressed blocks.  Apply
-           Reed-Solomon reconstruction per Section 6.4 on these
-           decompressed blocks to derive the missing data chunks.
+           Section 7.3 to obtain S-byte uncompressed blocks.  Select
+           exactly N chunks for reconstruction: use all available data
+           chunks first; if fewer than N data chunks are present,
+           supplement with recovery chunks from the working set to
+           reach exactly N, selecting them in ascending chunk index
+           order.  Any N-subset from a Cauchy construction will
+           produce correct results.  Apply Reed-Solomon reconstruction
+           per Section 6.4 on these N decompressed blocks to derive
+           the missing data chunks.
        i.  Proceed to reassembly under Section 9.1 or Section 9.2,
            as applicable, with all N decompressed data blocks
            available.
@@ -1189,8 +1217,9 @@ Part I: Core Specification
    testing or at initialization.
 
    N+M MUST NOT exceed 65,535.  This limit derives from the GF(2^16)
-   field size: the Cauchy construction requires all indices to be
-   distinct non-zero field elements.
+   field size: row indices k ∈ {0..M-1} and column indices
+   {M..M+N-1} must all fit within the field (0 to 65,535), and
+   k XOR (M+j) must be non-zero for all valid (k,j).
 
    --- Generator Matrix ---
 
@@ -1240,7 +1269,22 @@ Part I: Core Specification
          If idx >= N (recovery chunk, k = idx - N):
            matrix_row[i] = [gf_inv(k ^ (M+j)) for j in [0,N)]
    3.  Form N×N matrix A where row i = matrix_row[i].
-   4.  Invert A over GF(2^16) to get A_inv.
+   3a. Safety check: for each recovery chunk at position i (idx >= N,
+       k = idx - N), verify that k XOR (M+j) != 0 for all j in
+       [0,N).  By construction, k < M <= M+j, therefore k != M+j
+       as integers, therefore k XOR (M+j) != 0 (XOR of distinct
+       non-negative integers is always non-zero).
+       A chunk index outside [N, N+M) would have been rejected by
+       D4b.  Decoders MAY assert this invariant; if it fails the
+       chunk set is malformed and MUST be discarded.
+   4.  Invert A over GF(2^16) to get A_inv.  If inversion fails
+       (matrix is singular), the selected chunk set is incompatible
+       with the Cauchy construction; this MUST NOT occur when chunks
+       are produced by a conforming encoder.  If encountered, choose
+       a different N-subset from the chunks already in the working
+       set, excluding the recovery chunk that caused the singular
+       matrix, and retry.  If no alternative N-subset exists,
+       report "RS reconstruction failure" and halt.
    5.  For each missing data chunk index p:
          recovered[p][w] = XOR over i in [0,N):
            gf_mul( A_inv[p][i], available_chunks[i].words[w] )
@@ -1357,13 +1401,8 @@ Part I: Core Specification
 
       0x00  None (identity)                        (MUST support)
       0x01  zstd [RFC8878]                          (MUST support)
-      0x02  Deprecated: synonym for 0x01.  Decoders MUST decode
-            0x02 identically to 0x01.  Encoders MUST NOT produce
-            new files with 0x02.  (In earlier drafts, 0x02 was
-            "zstd level 19".  Since all zstd levels use the same
-            RFC 8878 frame format, the distinction was artificial.)
-      0x03  brotli [RFC7932]                        (SHOULD support)
-      0x04  lz4 frame format [LZ4-Frame]            (SHOULD support)
+      0x02  brotli [RFC7932]                        (SHOULD support)
+      0x03  lz4 frame format [LZ4-Frame]            (SHOULD support)
             Wire format: LZ4 Frame Format as defined in the LZ4
             Frame Description specification.  Implementations MUST
             use frame format, not raw block format.
@@ -1371,20 +1410,19 @@ Part I: Core Specification
 
    Decoder support requirements:
 
-   A conforming Core decoder MUST support algorithms 0x00, 0x01,
-   and 0x02 (which is identical to 0x01).  A decoder that does not
-   implement a declared algorithm (0x03, 0x04, or vendor-specific)
+   A conforming Core decoder MUST support algorithms 0x00 and 0x01.
+   A decoder that does not
+   implement a declared algorithm (0x02, 0x03, or vendor-specific)
    MUST report "unsupported compression algorithm: 0xXX" as a
    distinct error and MUST NOT produce any output for that file.
    Such a decoder is still considered conforming: files using
-   0x03/0x04 are valid Core files, but they are only fully
+   0x02/0x03 are valid Core files, but they are only fully
    decodable by implementations that support the declared algorithm.
 
-   This is a known and accepted interop limitation: the set of
-   decodable files depends on the decoder's supported algorithm set.
-   Encoders choosing algorithms beyond 0x01 accept this tradeoff.
-   Encoders SHOULD prefer 0x01 when maximum decoder compatibility
-   is required.
+   The set of decodable files depends on the decoder's supported
+   algorithm set.  Encoders choosing algorithms beyond 0x01 accept
+   reduced decoder compatibility.  Encoders SHOULD prefer 0x01 when
+   maximum decoder compatibility is required.
 
 7.2.  Algorithm Selection Guidance
 
@@ -1396,7 +1434,7 @@ Part I: Core Specification
       Text, JSON, XML, source code    0x01 (zstd)
       Binary executables              0x01 (zstd)
       Scientific / sensor data        0x01 (zstd, high level)
-      Latency-critical                0x04 (lz4)
+      Latency-critical                0x03 (lz4)
 
    Note: encoders MAY use any zstd compression level (including
    high levels such as 19) under algorithm ID 0x01; the compression
@@ -1428,7 +1466,7 @@ Part I: Core Specification
 8.1.  Per-Chunk Integrity
 
    Each chunk carries a 32-byte BLAKE3 hash of its header and payload
-   bytes.  BLAKE3 is the sole required hash algorithm for SFC 1.x.
+   bytes.  BLAKE3 is the sole required hash algorithm in version 0.1.
 
 8.2.  Global File Integrity
 
@@ -1481,7 +1519,9 @@ Part I: Core Specification
        on entry to step 2 all N blocks are decompressed S-byte
        sequences.  (The last data chunk was zero-padded to S bytes
        before compression per Section 5.2; trimming to Inner File
-       Size occurs in step 3.)
+       Size occurs in step 3.)  This step is informational when §9.1
+       is entered from §6.3 step g or step h, which already guarantee
+       all N blocks are available; in that path, proceed to step 2.
    2.  For i = 0 to N-1: append decompressed block i to output.
    3.  Trim output to Inner File Size.
    4.  Verify output against global file hash (D5f).
@@ -1507,8 +1547,13 @@ Part I: Core Specification
        against the Global Header's BLAKE3 hash.  If this passes,
        the inner content's integrity is verified against the Global
        Header hash, even without Trailer verification.
-       Report: "Terminal Segment not found; inner content hash
-       verified; container metadata unverified."
+       MUST communicate to the caller that reconstruction succeeded,
+       inner content hash is verified, and container metadata is
+       unverified (Trailer absent or unlocatable).  The exact form
+       of communication (error code, status flag, structured return
+       value) is implementation-defined; the distinction from fully
+       verified output MUST be observable through the API's return
+       value or output metadata, not only through diagnostic logging.
    4.  For standard files: sanitize filename and write output.
    5.  For SFC Directory: apply Section 16.7.
 
@@ -1516,7 +1561,7 @@ Part I: Core Specification
    of the Global Header Region (D2c) has not been verified.  An
    adversary who could replace the Global Header bytes and also forge
    or omit the Trailer would be undetected.  Under trusted channel
-   assumptions, unverified reconstruction is operationally sound.
+   assumptions, unverified reconstruction is acceptable.
 
    Output MUST be labeled: "reconstructed; container metadata
    unverified (Trailer absent)".
@@ -1532,7 +1577,10 @@ Part I: Core Specification
 
    Procedure:
    1.  Identify the longest contiguous run of verified data chunks
-       starting from index 0.
+       starting from index 0.  If chunk index 0 is not in the
+       working set, this run has length zero and partial reassembly
+       produces zero output bytes.  Decoders SHOULD report "no
+       contiguous prefix available" in this case.
    2.  Decompress each chunk in the run independently (Section 7.3).
    3.  Concatenate decompressed blocks.
    4.  If chunk N-1 is included: trim to Inner File Size.
@@ -1561,6 +1609,7 @@ Part I: Core Specification
    o  Known TLV with unexpected length for its tag.
    o  Known Profile TLV without corresponding Profile bit (rule g).
    o  Non-zero bytes after Inner Filename null terminator.
+   o  Non-zero Flags bits 1-3 (Section 4.6).
    o  Non-zero bytes in Trailer bytes 4-7.
    o  Trailer BLAKE3 hash mismatch.
    o  File UUID mismatch within UUID group.
@@ -1570,6 +1619,8 @@ Part I: Core Specification
    o  Chunk header algorithm ID mismatch with Global Header (D4d).
    o  Non-zero reserved bytes (location, offset, values).
    o  Insufficient chunks (V available, N required, missing indices).
+   o  RS reconstruction failure (singular matrix; no valid chunk
+      subset found).
    o  Global file hash mismatch after full reconstruction.
    o  Truncated chunk (chunk index).
    o  Global Header conflict in SFC/P2.
@@ -1582,7 +1633,7 @@ Part I: Core Specification
    o  Invalid terminal flag value (not 0x00 or 0x01; Section 13.1).
    o  Chunk end marker "/CHK" invalid (D3e).
    o  Decompressed chunk size != S bytes.
-   o  Compressed payload length exceeds 2*S (Section 17.3).
+   o  Compressed payload length exceeds 2*S (Section 18.3).
    o  Version mismatch across SFC/P2 segments (Section 13.5).
    o  Missing Global Header.
    o  Terminal Segment not found (warning; unverified reconstruction
@@ -1591,10 +1642,17 @@ Part I: Core Specification
    o  Empty inner filename.
    o  Profile MUST-level violation.
    o  SFC/P2 and SFC/P3 bits both set in the same file (Section 14).
+   o  SPLIT_TRANSPORT bit (bit 0) set without SFC/P2 Profile bit
+      (bit 5) set: decoder MUST treat as a format error and halt.
+      A file with bit 0 set but bit 5 absent is structurally
+      ambiguous; the Segment Header MUST be skipped (bit 0 signals
+      its presence) but P2 semantics cannot be applied.
    o  Manifest BLAKE3 hash failure (SFC/P5; Section 16.2).
    o  Case collision in Manifest paths (SFC/P5; Section 16.3).
    o  Manifest entry offset/size inconsistency (SFC/P5; Section 16.7).
    o  Erasure algorithm 0x00 with M > 0 (Section 6.1).
+   o  Non-zero erasure algorithm with M = 0 (Section 6.1).
+   o  Manifest entry path length L = 0 (Section 16.7).
    o  Nominal chunk size S is odd (Section 6.4).
    o  Unsupported erasure algorithm: 0xXX (Section 6.1).
    o  Unsupported compression algorithm: 0xXX (Section 7.1).
@@ -1602,8 +1660,8 @@ Part I: Core Specification
    o  Duplicate index in priority list (Section 4.5 rule b).
    o  Priority index out of range [0, N-1] (Section 4.5 rule c).
    o  Field value below minimum (S = 0, or other violations of
-      Section 17.3 lower bounds).
-   o  Inner File Size = 0 with N != 1 (Section 17.3).
+      Section 18.3 lower bounds).
+   o  Inner File Size = 0 with N != 1 (Section 18.3).
 
    Error severity classification:
 
@@ -1616,11 +1674,13 @@ Part I: Core Specification
    File-level errors (invalid magic, unsupported version, header
    length out of bounds, Global Header conflict, Trailer hash
    mismatch, non-zero Trailer reserved bytes, unsupported algorithm,
-   erasure 0x00 with M>0, S is odd, Inner File Size = 0 with N != 1,
+   erasure 0x00 with M>0, non-zero erasure algorithm with M=0,
+   S is odd, Inner File Size = 0 with N != 1,
    version mismatch across segments, missing/invalid Segment Header,
    Segment Header reserved bytes, segment index/count violations,
    duplicate known TLV, TLV overrun, Profile TLV without bit,
-   Manifest hash failure, Manifest offset/size inconsistency):
+   Manifest hash failure, Manifest offset/size inconsistency,
+   Manifest entry path length L=0):
    decoder MUST halt.
 
 9.5.  Duplicate Chunk Handling
@@ -1654,7 +1714,7 @@ Part I: Core Specification
    N = ceil(Inner File Size / S)
 
    Exception: when Inner File Size = 0, N MUST be 1 regardless of S.
-   See Section 17.3 for the zero-length inner content encoding rule.
+   See Section 18.3 for the zero-length inner content encoding rule.
 
    Suggested S values (non-normative):
 
@@ -1690,6 +1750,69 @@ Part I: Core Specification
    the image (P1 Class S), it does provide non-zero utility under
    partial delivery.  See Section 12.3.
 
+10.3.  Encoder Conformance Checklist
+
+   A conforming Core encoder MUST:
+
+   o  Generate a fresh version 4 (random) UUID [RFC9562] per encoding;
+      MUST NOT reuse the same UUID for distinct encodings (Section 4.1).
+   o  Write the preamble with major version = 0, minor version = 1
+      (Section 3.1).
+   o  Set Flags bits 1-3 to zero (reserved permanently; Section 4.6).
+   o  Set Flags bits 9-15 to zero in version 0.1 (Section 4.6).
+   o  Compute N = ceil(Inner File Size / S); when Inner File Size = 0,
+      set N = 1 (Section 10.1).
+   o  Ensure N + M does not exceed 65,535 (Section 6.2).
+   o  Use a positive, even S (Section 6.4).
+   o  Zero-pad data block N-1 to exactly S bytes before compression
+      and RS input (Section 6.4).
+   o  Apply RS encoding on uncompressed S-byte blocks; compress each
+      recovery block independently afterwards (Section 6.4).
+   o  When M = 0: set erasure algorithm ID to 0x00 (Section 6.1).
+   o  When M > 0: MUST NOT use erasure algorithm 0x00; MUST use
+      algorithm 0x01 (RS GF(2^16)) or a vendor-specific algorithm
+      (0x80+) (Section 6.1).
+   o  Set the same erasure algorithm ID in both the Global Header and
+      each chunk header (Section 5.1).
+   o  Set the same compression algorithm ID in both the Global Header
+      and each chunk header; IDs MUST agree (Section 5.1).
+   o  Compute the global BLAKE3 hash over the trimmed inner content
+      (before zero-padding the last block) and store it in the Global
+      Header (Section 8.2).
+   o  Compute the Trailer BLAKE3 hash over the exact bytes of the
+      Global Header Region (H+4 bytes) and store it in the Trailer
+      (Section 3.4).
+   o  Assign chunk indices 0..N-1 to data chunks and N..N+M-1 to
+      recovery chunks (Section 5.2, Section 5.4).
+   o  Write zero bytes in all reserved fields: chunk header offsets
+      34-47, Trailer offsets 4-7 and 48-63 (Section 5.5).
+   o  Exclude from the Inner Filename: '/' (0x2F), '\' (0x5C), bytes
+      in range 0x00-0x1F, and the sequences ".." and "." as the
+      entire effective filename (Section 4.8).
+   o  Null-pad the Inner Filename field to exactly 255 bytes; all
+      bytes after the null terminator MUST be zero (Section 4.8).
+   o  NOT produce files where erasure algorithm = 0x00 and M > 0
+      (Section 6.1).
+   o  NOT produce files with an odd S value (Section 6.4).
+   o  NOT produce a priority list with P > N (Section 4.5).
+   o  NOT produce duplicate indices in the priority list (Section 4.5).
+   o  NOT produce priority index values outside [0, N-1] (Section 4.5).
+   o  NOT produce a header where 4·P bytes plus fixed fields and any
+      TLV bytes would cause H to exceed 65,536 bytes (Section 4.5
+      rule g).
+
+   A conforming Core encoder SHOULD:
+
+   o  Generate UUIDv4 using a cryptographically secure random source
+      (Section 4.1).
+   o  Select S from the guidance table in Section 10.1.
+   o  Finalize the Global Header Region before computing the Trailer
+      hash, so the hash covers the complete header bytes including the
+      global file hash (Section 3.4).
+   o  Set the Trailer encoder timestamp to the current time in seconds
+      since the Unix epoch (Section 3.4); writing zero is permitted
+      but provides no diagnostic value.
+
 
 11.  Decoder Behavior (Core)
 
@@ -1705,8 +1828,7 @@ Part I: Core Specification
    o  When Global Header is available: verify chunk bytes 32-33
       match Global Header algorithm fields (Section 5.1).
    o  Support erasure reconstruction (algorithm 0x01).
-   o  Support decompression of algorithms 0x00, 0x01 (zstd), and
-      0x02 (deprecated synonym for 0x01; decode identically).
+   o  Support decompression of algorithms 0x00 and 0x01 (zstd).
    o  Report "unsupported compression algorithm: 0xXX" for any
       algorithm it does not implement; produce no output for that
       file (Section 7.1).
@@ -1725,8 +1847,8 @@ Part I: Core Specification
       (design goal G3).
 
    A conforming Core decoder SHOULD:
-   o  Support decompression of algorithms 0x03 (brotli) and
-      0x04 (lz4 frame format).
+   o  Support decompression of algorithms 0x02 (brotli) and
+      0x03 (lz4 frame format).
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1766,7 +1888,7 @@ Part II: Profiles
 
    Class N — No application-level partial utility: full file required.
       0x0024  PNG non-interlaced
-      0x0026  WebP baseline
+      0x0026  WebP (baseline)
 
 12.3.  Partial Utility by Class
 
@@ -1787,10 +1909,24 @@ Part II: Profiles
 12.4.  Priority Chunks (SFC/P1)
 
    For Class P formats: encoders MUST verify codestream structure
-   before listing priority chunks.  MUST NOT assume byte layout.
+   to identify the chunk indices carrying the first quality layer
+   or spatial resolution layer.  Encoders MUST set P > 0 and list
+   those chunk indices.  Encoders MUST NOT assume a fixed byte
+   layout; byte offsets MUST be derived from codestream inspection.
 
-   For Class S: priority chunks SHOULD be chunks 0 through
-   max(0, ceil(N*0.1) - 1).
+   For Class S formats: encoders MUST set priority chunks to indices
+   0 through max(0, ceil(N*0.1) - 1), covering approximately the
+   first 10% of chunks (the top rows of the image).  The max(0,...)
+   guard is unreachable given N ≥ 1 (Section 18.3) but is retained
+   for defensive clarity.
+
+   P1 and P2 interaction: when SFC/P1 and SFC/P2 are combined, the
+   priority list is advisory only.  SFC/P2 receivers must download
+   complete segment files; they cannot request individual chunks.
+   Decoders operating in P2 mode MUST NOT treat the priority list
+   as a mechanism for targeted chunk retrieval.  Encoders SHOULD
+   place priority chunks in early segments where possible, but this
+   is a best-effort placement with no protocol enforcement.
 
 
 13.  Profile 2 — Split Transport (SFC/P2)
@@ -1821,9 +1957,7 @@ Part II: Profiles
    SPLIT_TRANSPORT and P2 bits are OR-added to the existing profile
    bits; they do NOT replace them.  For example, a P2-split SFC/P5
    directory container MUST have both bit 5 (SFC/P2) and bit 8
-   (SFC/P5) set in every segment.  Encoders that reset Flags to only
-   the P2 bits produce non-conformant segments that prevent decoders
-   from identifying the inner profile.
+   (SFC/P5) set in every segment.
 
    --- Segment Header ---
 
@@ -1835,6 +1969,11 @@ Part II: Profiles
       Offset  Length  Field
       ------  ------  -----
       0       4       "SEG\0" (0x53 0x45 0x47 0x00)
+                        Note: the fourth byte is 0x00 (binary null),
+                        part of the magic value — not a C string
+                        terminator.  Implementations MUST match all
+                        four bytes; string-comparison APIs that stop
+                        at 0x00 will mis-identify the magic.
       4       4       Segment index (uint32 LE)
       8       4       Total segment count (uint32 LE)
       12      1       Terminal segment flag
@@ -1954,11 +2093,11 @@ Part II: Profiles
    where any two segments differ in either major or minor version;
    report "version mismatch across segments" and halt.
 
-   Rationale: minor version differences can change the semantics of
-   reserved chunk header bytes (Section 3.1), creating ambiguity
-   when segments with different minor versions are combined.
-   Requiring exact version match eliminates this class of interop
-   issues entirely.
+   Rationale: future minor versions may assign semantics to bytes
+   that are reserved in version 0.1 (Section 3.1).  Combining
+   segments with different minor versions would create ambiguity
+   about which byte semantics apply.  Requiring an exact version
+   match eliminates this class of interoperability issues entirely.
 
 13.6.  Incomplete Segment Handling
 
@@ -1973,14 +2112,6 @@ Part II: Profiles
    Applies to complete single-file SFC objects only.
    NOT applicable to SFC/P2 segments.
 
-   Applicability note: the chunk offset index (TLV 0x0020) is
-   limited to N+M <= 2048 by the TLV value length cap (16,384
-   bytes).  Files with more than 2048 chunks require sequential
-   scan for chunk boundary discovery.  SFC/P3 is most effective
-   for moderately-sized files; for very large files with many
-   chunks, targeted HTTP Range access is not supported by this
-   profile.
-
    Mutual exclusion with SFC/P2: Encoders MUST NOT set the SFC/P3
    Profile bit (bit 6) or include TLV 0x0020 in any file where the
    SPLIT_TRANSPORT flag (bit 0) or SFC/P2 Profile bit (bit 5) is
@@ -1989,24 +2120,15 @@ Part II: Profiles
    (Section 9.4), MUST ignore P3 semantics, and MUST proceed using
    SFC/P2 rules.
 
-   Servers SHOULD include:
-      Content-Type: application/sfc
-      SFC-Version: 1.8
-      SFC-UUID: <File UUID, canonical string>
-      SFC-Chunk-Count: <N+M>
-      SFC-Chunk-Size: <S in bytes>
-      Accept-Ranges: bytes
-
-   The SFC-* header names avoid the deprecated X- prefix convention
-   (per RFC 6648).  Implementations that must interoperate with
-   existing software using X-SFC-* headers SHOULD accept both forms.
+   Servers SHOULD include Content-Type: application/sfc and
+   Accept-Ranges: bytes in HTTP responses serving SFC files.
 
    Optional TLV 0x0020: array of (N+M) uint64 LE byte offsets of
    each chunk's "CHK\0" from file start.  Enables targeted HTTP
    Range requests without linear scan of chunk length fields.
 
    Applicability constraint: TLV 0x0020 has L = 8*(N+M) bytes.
-   Given the TLV value length limit of 16,384 bytes (Section 17.3),
+   Given the TLV value length limit of 16,384 bytes (Section 18.3),
    this TLV is only encodable when N+M <= 2048.  Encoders MUST NOT
    include TLV 0x0020 when N+M > 2048.  For larger files, clients
    MUST locate chunk boundaries by scanning chunk payload length
@@ -2061,6 +2183,12 @@ Part II: Profiles
 
    The Inner Format ID MUST be 0x0050 when SFC/P5 is active.
    The SFC/P5 Profile bit (bit 8 of Flags) MUST be set.
+
+   SFC/P5 requires S ≥ 8 bytes so that the Manifest Magic (bytes
+   0-3) and body-length B (bytes 4-7) are both fully contained
+   within chunk 0, as required by §16.2 and §16.8 step 2a.
+   Encoders MUST reject S < 8 for SFC/P5 files.  (In practice,
+   S ≥ 64 is the minimum for non-identity compression per §18.3.)
 
 16.2.  Manifest Structure
 
@@ -2211,12 +2339,14 @@ Part II: Profiles
    The last data chunk (N-1) is zero-padded to S bytes before
    compression and RS input.
 
-   For SFC/P2: encoders SHOULD place chunks 0..K-1 in the first
-   segment.  This allows receivers to read the Manifest and begin
-   per-file extraction as early as possible.  Note that when chunk
-   K-1 is a mixed chunk, it contains the start of the first file's
-   data; including it in the first segment enables early extraction
-   of that file if its remaining chunks are also available.
+   For SFC/P2: encoders MUST place chunks 0..K-1 in the first
+   segment.  Without the Manifest (chunks 0..K-1), receivers cannot
+   determine file boundaries, byte offsets, or per-file hashes;
+   file-level partial extraction is impossible until the Manifest
+   arrives.  Note that when chunk K-1 is a mixed chunk, it contains
+   the start of the first file's data; including it in the first
+   segment enables early extraction of that file if its remaining
+   chunks are also available.
 
 16.6.  Encoder Behavior (SFC/P5)
 
@@ -2228,7 +2358,7 @@ Part II: Profiles
    o  If no regular files remain after traversal (e.g., directory
       contains only empty subdirectories and/or symbolic links),
       MUST report "no encodable regular files" and refuse to encode.
-      F >= 1 is a hard requirement (Section 17.3).
+      F >= 1 is a hard requirement (Section 18.3).
    o  Check for case collisions: compute the case-folded form of
       each file's relative path.  If any two paths have the same
       case-folded form, MUST report an error and refuse to encode.
@@ -2270,6 +2400,9 @@ Part II: Profiles
            If fails: report "Manifest BLAKE3 hash failure"; halt.
        e.  Parse F file entries from bytes 12..8+B-1.
        f.  Validate file entry consistency (MUST enforce):
+           - Each file entry's path length L MUST be at least 1.
+             An entry with L=0 is a format error; report "Manifest
+             entry path length is zero" and halt extraction.
            - byte_offset of first file MUST equal manifest_size.
            - For each subsequent file i > 0: byte_offset_i MUST
              equal byte_offset_{i-1} + file_size_{i-1}.
@@ -2283,7 +2416,12 @@ Part II: Profiles
    4.  For each file entry in Manifest order:
        a.  Sanitize each path component per Section 4.8.
        b.  Check for case collision with already-written files.
-           If collision: report error; do not write second file.
+           If collision: the first-listed file entry in Manifest
+           order is written; subsequent colliding entries are
+           skipped and reported.  Since §16.6 mandates lexicographic
+           Manifest ordering by UTF-8 byte ordering, the path that
+           sorts earlier under UTF-8 byte ordering always survives
+           a collision.
        c.  Reconstruct directory structure; create intermediate
            directories as needed.
        d.  If file_size = 0:
@@ -2311,7 +2449,7 @@ Part II: Profiles
    (Section 9.3): it delivers complete individual files rather than
    a byte prefix of the inner content.
 
-   --- Step 0: Determine output directory and chunk availability ---
+   --- Step 1: Determine output directory and chunk availability ---
 
    Derive the output directory name from the Inner Filename field
    of the Global Header, sanitized per Section 4.8.  This is the
@@ -2321,7 +2459,7 @@ Part II: Profiles
 
    Compute V (valid chunks in working set per Section 6.3 step f).
 
-   --- Step 1: Obtain Manifest bytes ---
+   --- Step 2: Obtain Manifest bytes ---
 
    First, try to read chunk 0 to learn B (body length) and compute
    manifest_size and K:
@@ -2330,7 +2468,7 @@ Part II: Profiles
        per Section 7.3.  Verify bytes 0-3 are "MFST" magic; if
        not, report "invalid Manifest magic" and halt.  Read B
        from decompressed bytes 4-7.  Verify B against hard limits
-       (57 <= B <= 64 MB per Section 17.3); if out of range, report
+       (57 <= B <= 64 MB per Section 18.3); if out of range, report
        "Manifest body length out of bounds" and halt.
        Compute manifest_size = 8 + B + 32.
        Compute K = ceil(manifest_size / S).
@@ -2346,14 +2484,14 @@ Part II: Profiles
    chunks (0..K-1) are in the working set:
 
    c.  If all K chunks are directly present: decompress them;
-       concatenate to obtain Manifest bytes; proceed to Step 2.
+       concatenate to obtain Manifest bytes; proceed to Step 3.
 
    d.  If some Manifest chunks are absent:
        - If V >= N: apply Case A below; RS recovers missing chunks.
        - If V < N: report "Manifest unavailable; file-level
          extraction impossible" and halt.
 
-   --- Step 2: Verify Manifest ---
+   --- Step 3: Verify Manifest ---
 
    Verify the Manifest BLAKE3 hash at offset 8+B of the Manifest
    bytes.  If verification fails: report "Manifest BLAKE3 hash
@@ -2373,15 +2511,33 @@ Part II: Profiles
        authenticated; otherwise label "inner content hash verified;
        container metadata unverified (Trailer absent or unverified)."
    3.  All N data blocks are now available.  Extract all files using
-       the procedure in Section 16.7 steps 2-5.  Each file
-       extracted and passing its per-file BLAKE3 hash is labeled
-       individually verified.
+       the procedure in Section 16.7 steps 2-5 (step 2d, Manifest
+       BLAKE3 hash verification, was already performed in §16.8
+       Step 3 and need not be repeated; all other sub-steps apply).
+       Each file extracted and passing its per-file BLAKE3 hash is
+       labeled individually verified.
 
    --- Case B: V < N (insufficient chunks for full RS) ---
 
    When V < N, RS reconstruction is not possible.  Only files whose
    complete chunk range is directly present in the working set can
    be extracted.
+
+   Before processing any file entry, apply all checks from Section
+   16.7 step 2f:
+      - Each file entry's path length L MUST be at least 1.
+        An entry with L=0 is a format error; report "Manifest
+        entry path length is zero" and halt.
+      - byte_offset[0] MUST equal manifest_size.
+      - For each i > 0: byte_offset[i] MUST equal
+        byte_offset[i-1] + file_size[i-1].
+      - For each file: byte_offset + file_size MUST NOT exceed
+        Inner File Size.
+   If any byte_offset check fails: report "Manifest entry
+   offset/size inconsistency" and halt.  These checks MUST precede
+   any chunk access; a crafted Manifest with invalid byte_offset
+   values could otherwise cause out-of-bounds reads on the chunk
+   working set.
 
    1.  For each file entry in Manifest:
        a.  If file_size = 0:
@@ -2453,14 +2609,36 @@ Part III: Security, IANA, References
 
 17.  Implementation Status
 
-   An open-source reference implementation of this specification is
-   available at:
+   (Note: This section will be removed before publication per
+   RFC 7942 Section 7.)
 
-      https://github.com/tnxbutno/sfc
+   Name: sfc (reference implementation)
 
-   The implementation includes the core library (libsfc_lib) and a
-   command-line interface.  It is written in C++23 and licensed under
-   the Apache License 2.0.
+   Description: Open-source C++23 library (libsfc_lib) and command-
+   line interface implementing the core SFC format and all five
+   profiles (SFC/P1 through SFC/P5).
+
+   Level of maturity: prototype / pre-standard.
+
+   Coverage: Core encoding and decoding (§3-§11); SFC/P1 priority
+   chunk classification (§12); SFC/P2 split transport with
+   multi-segment encode and decode (§13); SFC/P3 TLV 0x0020
+   (§14); SFC/P4 TLV 0x0030 (§15); SFC/P5 directory encode,
+   full extraction, and partial extraction (§16).  GF(2^16) RS
+   over Cauchy matrix verified against reference inverse values
+   (§6.4).
+
+   Correctness: 303 automated tests covering wire-format round-
+   trips, error injection, RS reconstruction across partial chunk
+   sets, directory extraction, and CLI integration.  Tests pass
+   under AddressSanitizer, UndefinedBehaviorSanitizer, and
+   ThreadSanitizer.
+
+   Contact: V. Krivchikov <sfcietf@gmail.com>
+
+   URL: https://github.com/tnxbutno/sfc
+
+   Last updated: 2026-05-06
 
 
 18.  Security Considerations
@@ -2503,7 +2681,14 @@ Part III: Security, IANA, References
    maximum allocatable header buffer is 65,536 + 4 = 65,540 bytes.
    Minimum H = 331 (all fixed fields through priority count P with
    P=0 and no TLV fields): 4+16+8+2+255+32+4+4+4+1+1+2+2 = 335,
-   so H >= 331 (= 335 - 4).
+   so H >= 331 (= 335 - 4, because the 4-byte H field itself is
+   excluded from H's value, being located before it).
+
+   Note on P: the priority list (4·P bytes) occupies header space.
+   Combined with the 331-byte fixed-field minimum and any TLV
+   bytes, the total MUST NOT exceed H_max = 65,536 bytes.  Absent
+   TLV fields, P ≤ 16,301 (= floor((65,536 - 331) / 4)).
+   See Section 4.5 rule g.
 
    Note on S: S MUST be even (required for GF(2^16) word alignment
    in Reed-Solomon; Section 6.4).  Minimum S = 2 bytes.  When
@@ -2516,9 +2701,11 @@ Part III: Security, IANA, References
    compressed payload exceeds 2*S rejects it regardless of S value.
 
    Note on N+M: the combined limit of 65,535 derives from the
-   GF(2^16) field size.  The Cauchy matrix construction requires
-   all row and column indices to map to distinct non-zero field
-   elements; GF(2^16) has 65,535 non-zero elements.
+   GF(2^16) field size.  Row indices k ∈ {0..M-1} and column
+   indices {M..M+N-1} must fit within the field (0 to 65,535),
+   and k XOR (M+j) must be non-zero for all valid (k,j) — which
+   holds because k < M ≤ M+j implies k ≠ M+j.  The limit of
+   65,535 (rather than 65,536) is a one-unit conservative margin.
 
    Note on compressed payload length: the maximum of 2*S prevents
    allocation of unbounded memory from a single chunk payload
@@ -2529,6 +2716,29 @@ Part III: Security, IANA, References
    container with zero files is not meaningful (empty directories
    are a non-goal per Section 1.3).  The minimum B = 57 derives
    from one file entry with a 1-byte path: B = 4 + (52 + 1) = 57.
+
+   Note on F and B interaction: the F and B limits are not
+   independent.  With typical 20-character paths (entry ≈ 72 bytes),
+   the effective maximum F is approximately 64 MB / 72 ≈ 909,000
+   files — well below the stated 1,048,576 limit.  The F limit of
+   1,048,576 is only achievable with paths of 10 characters or fewer.
+   Encoders MUST report an error when computing B would exceed 64 MB
+   (suggested message: "Manifest body length would exceed 64 MB")
+   regardless of whether F is within its stated limit.
+
+   Note on Trailer integrity: the Trailer BLAKE3 hash (offsets 8-39)
+   covers the Global Header Region, not the Trailer itself.  Trailer
+   fields outside this hash — reserved bytes 4-7, the encoder
+   timestamp (offsets 40-47), and reserved bytes 48-63 — are not
+   authenticated by any hash.  An adversary with write access to the
+   file can corrupt these fields without invalidating D2c.  In
+   particular, writing any non-zero byte to Trailer offsets 4-7
+   causes a format error and halt (Section 5.5) while leaving the
+   BLAKE3 hash intact — a denial-of-service requiring only file write
+   access, not cryptographic capability.  Deployments requiring
+   Trailer authenticity MUST establish integrity over the full file
+   through an external mechanism (e.g., code signing, transport-layer
+   authentication).
 
    Zero-length inner content (Inner File Size = 0): permitted, but
    requires a defined encoding because N = ceil(0 / S) = 0 would
@@ -2596,7 +2806,13 @@ Part III: Security, IANA, References
    Before the Global Header is received, N and S are unknown;
    buffer limits cannot use N*S.  Decoders MUST enforce an
    unconditional hard cap before the Global Header arrives.
-   Recommended hard cap: 10 GB total provisional buffer.
+   Recommended hard cap: 10 GB total provisional buffer.  This
+   value derives from N_max * S_max = 65,534 * 268,435,456 bytes
+   (~16 PB total), which is impractical as a hard cap; 10 GB is
+   chosen as a ceiling for unconstrained desktop-class deployments.
+   Constrained environments (embedded, IoT) SHOULD set a lower cap
+   appropriate to available memory; the 10 GB figure is a ceiling,
+   not a floor.  Implementations SHOULD document their actual cap.
 
    After the Global Header, N*S*2 MAY be used as soft guidance for
    working-set size but MUST NOT replace the pre-header hard cap.
@@ -2617,21 +2833,39 @@ Part III: Security, IANA, References
       Type name:               application
       Subtype name:            sfc
       Required parameters:     none
-      Optional parameters:     version (e.g., "1.8").  If present
+      Optional parameters:     version (e.g., "0.1").  If present
                                and inconsistent with the in-file
                                version (Section 3.1), the in-file
                                version takes precedence.
       Encoding considerations: binary
-      Security considerations: See Section 17
-      Published specification: This document
-      File extension:          .sfc
-      Magic bytes:             53 46 43 00
+      Security considerations: See Section 18
+      Interoperability
+        considerations:        The format is self-describing.
+                               Decoders MUST accept any conformant
+                               encoder output.  Partial files (missing
+                               chunks) are valid inputs to partial
+                               reassembly.  See Section 9.
+      Applications that use
+        this media type:       File transfer and archival tools
+                               operating over unreliable channels;
+                               command-line and library encoders and
+                               decoders implementing this specification.
+      Additional information:
+        Deprecated aliases:    none
+        Magic number(s):       53 46 43 00 (bytes 0-3)
+        File extension(s):     .sfc
+        Macintosh file type
+          code(s):             none
+      Person & email to
+        contact for further
+        information:           V. Krivchikov <sfcietf@gmail.com>
+      Intended usage:          COMMON
+      Restrictions on usage:   none
+      Author:                  V. Krivchikov
+      Change controller:       IETF
 
-   Note: earlier drafts used the unregistered type
-   "application/x-sdrc".  Implementations encountering that type
-   SHOULD treat it as equivalent to "application/sfc".  The "x-"
-   prefix convention is deprecated per RFC 6648 [RFC6648] and
-   MUST NOT be used for new deployments.
+   The "x-" prefix convention is deprecated per RFC 6648 [RFC6648]
+   and MUST NOT be used for new deployments.
 
 
 20.  References
@@ -2653,21 +2887,29 @@ Part III: Security, IANA, References
    [RFC7932]  Alakuijala, J. and Szabadka, Z., "Brotli Compressed
               Data Format", RFC 7932, July 2016.
 
-   [BLAKE3]   O'Connor, J., et al., "BLAKE3: One Function, Fast
-              Everywhere", 2020.
-              Specification: https://github.com/BLAKE3-team/BLAKE3-specs
-              /blob/master/blake3.pdf (commit 2966085, 2023-08-08).
-              Implementations MUST conform to the BLAKE3 specification
-              as of the referenced commit.  Should a stable, archived
-              version of the BLAKE3 specification become available
-              (e.g., as an RFC or NIST publication), that reference
-              SHOULD supersede this one.
+   [BLAKE3]   O'Connor, J., Aumasson, J.-P., Neves, S., and
+              Wilcox-O'Hearn, Z., "BLAKE3: One Function, Fast
+              Everywhere", USENIX Security Symposium, 2021.
+              https://www.usenix.org/conference/usenixsecurity21/
+              presentation/oconnor
+              The normative specification is the BLAKE3 team's
+              published paper and associated test vectors.  The
+              reference implementation repository is at
+              https://github.com/BLAKE3-team/BLAKE3 (commit 2966085,
+              2023-08-08 used for implementation verification).
+              Should BLAKE3 be published as an RFC or NIST standard,
+              that publication MUST supersede this reference.
 
    [LZ4-Frame]
-              Collet, Y., "LZ4 Frame Format Description",
-              https://github.com/lz4/lz4/blob/dev/doc/
-              lz4_Frame_format.md (v1.6.2, 2022).
-              SFC algorithm 0x04 MUST use the LZ4 Frame Format
+              Collet, Y., "LZ4 Frame Format Description", v1.6.2,
+              2022.  https://github.com/lz4/lz4/blob/dev/doc/
+              lz4_Frame_format.md
+              Note: LZ4 has no current IETF RFC.  Algorithm 0x03
+              (LZ4 Frame Format) is at risk for removal or demotion
+              to informative if a stable archival specification is
+              not established before this document advances.  The
+              IESG is expected to flag this reference.
+              SFC algorithm 0x03 MUST use the LZ4 Frame Format
               (not the raw LZ4 Block Format).
 
    [Unicode-CaseFolding]
@@ -2690,9 +2932,9 @@ Part III: Security, IANA, References
 
 Appendix A.  Format Summary Diagram
 
-   Standard single-file SFC (version 1.8):
+   Standard single-file SFC (version 0.1):
 
-   [00-07]  Magic + Version: 53 46 43 00  01 00  08 00
+   [00-07]  Magic + Version: 53 46 43 00  00 00  01 00
 
    ┌─ Global Header Region (H+4 bytes, starts at file offset 8) ──┐
    │ H | UUID | Inner File Size | format_id | filename | blake3   │
@@ -2702,8 +2944,8 @@ Appendix A.  Format Summary Diagram
 
    ┌─ Chunk (repeated N+M times) ─────────────────────────────────┐
    │ "CHK\0" | UUID | index | type | payload_len                  │
-   │ byte 32: compression_algo (always set in v1.x)                │
-   │ byte 33: erasure_algo (always set in v1.x)                   │
+   │ byte 32: compression_algo (version 0.1)                       │
+   │ byte 33: erasure_algo (version 0.1)                          │
    │ bytes 34-47: reserved (MUST be zero)                         │
    │ [compressed payload]                                         │
    │ BLAKE3(header||payload) [32 bytes] | "/CHK" [4 bytes]        │
@@ -2752,6 +2994,10 @@ Appendix A.  Format Summary Diagram
 
 Appendix B.  Inner Format Compatibility Table
 
+   Note: IDs 0x0000 (Unknown/unspecified) and 0x0001 (Arbitrary
+   binary data) are catch-all values and are not listed; all other
+   assigned IDs are enumerated below.
+
    Format          ID      Byte-  App      P1     Notes
                            str?   utility? class
    ─────────────── ─────── ────── ──────── ────── ─────────────────────
@@ -2761,20 +3007,32 @@ Appendix B.  Inner Format Compatibility Table
    JPEG XL         0x0023  Yes    Good     P      Recommended
    PNG standard    0x0024  Yes    None     N      Full file needed
    PNG interlaced  0x0025  Yes    Partial  I      Coarse preview
-   WebP baseline   0x0026  Yes    None     N      Full file needed
+   WebP (baseline) 0x0026  Yes    None     N      Full file needed
    Plain text      0x0010  Yes    Good     -      Line by line
    CSV / NDJSON    0x0011  Yes    Good     -      Record by record
    MP4 fragmented  0x0030  Yes    Good     -      Plays prefix
+   Matroska/WebM   0x0031  Yes    Good     -      Streamable; plays prefix
    ZIP             0x0040  Yes    None     -      Directory at EOF
    gzip            0x0041  Yes    None     -      Full stream needed
+   zstd data       0x0042  Yes    None     -      Full stream needed
    tar + zstd      0x0043  Yes    Good     -      Sequential
    SFC Directory   0x0050  Yes    Good‡    P5     Per-file extraction
    PDF             0x0100  Yes    Poor     -      Structure varies
+   ePub            0x0101  No     Poor     -      Spine at end; full needed
+   Nested SFC      0x00FF  Yes    Good§    -      Inner SFC rules apply
 
    † JPEG Progressive: utility is encoding and viewer dependent.
    ‡ SFC Directory: file-level extraction once Manifest chunks
      (0..K-1) available; each file extractable when its chunk
      range is complete.
+   § Nested SFC: partial utility depends on the inner SFC's own
+     encoding parameters; a decoder MUST parse the inner SFC format
+     to determine utility class.
+
+   Byte-str? column: "Yes" means the format can be parsed as a
+   forward-only byte stream without backtracking or seeking,
+   regardless of partial utility.  "No" means the format requires
+   seeking or end-of-stream structures to be usable.
 
 
 Appendix C.  Example Encoding Sessions
@@ -2960,6 +3218,18 @@ D.12.  Erasure Reconstruction
 D.13.  Header Length Field Parsing
    D.13a: H correct → header parsed; reassembly succeeds.
    D.13b: H = correct+4 (encoder bug) → format error.
+      Common encoder defect: encoder includes the 4-byte H field
+      itself in the value of H, producing H = (actual body length)
+      + 4 instead of H = (actual body length).  The decoder reads
+      H, allocates H+4 bytes for the Global Header Region, then
+      parses the fixed fields and finds that the declared H does not
+      match the actual byte count of fixed fields plus priority list
+      plus TLV — specifically, the H field value exceeds the maximum
+      of 65,536 (Section 18.3) or causes the header region to overrun
+      the file.
+      Expected: validate H against bounds [331, 65,536]; if H exceeds
+      65,536 or the resulting H+4 region overruns the file boundary,
+      report "Header length H out of bounds" and halt.
 
 D.14.  Duplicate Known TLV Tag
    TLV tag 0x0030 (SFC/P4 original format ID) appears twice.
@@ -2970,14 +3240,17 @@ D.15.  Unknown TLV Tag Filling Remaining Header Space
    Unknown TLV with L set to consume all remaining header space.
    Expected: tag skipped; reassembly proceeds normally.
 
-D.16.  Multiple Terminal Candidates in SFC/P2
-   Two segments; one has Segment Header terminal flag = 0x01 and
-   passes Trailer detection; another also has terminal flag = 0x01
-   and passes Trailer detection.
+D.16.  Multiple Terminal Candidates — Trailer Present on Both
+   Two segments; both have Segment Header terminal flag = 0x01;
+   both also carry a structurally valid Trailer (magic + correct
+   hash).  This tests that a passing Trailer does not cause the
+   decoder to accept one segment as the authoritative terminal
+   instead of counting flags.
    Expected: report "Multiple Terminal flags"; halt.
 
-D.17.  Two Segments Marked Terminal via Segment Header
-   Two segments both have Segment Header terminal flag = 0x01.
+D.17.  Multiple Terminal Candidates — No Trailer
+   Two segments; both have Segment Header terminal flag = 0x01;
+   neither carries a valid Trailer.
    Expected: report "Multiple Terminal flags"; halt.
 
 D.18.  Chunk Index Out of Range
@@ -3059,15 +3332,10 @@ D.32.  Per-Chunk Decompression Without Global Header
    Expected: decoder decompresses chunk payload using byte 32's
    algorithm ID; chunk passes D3a-D3e and enters provisional buffer.
 
-D.33a.  Chunk Algorithm ID Mismatch — Real
+D.33.  Chunk Algorithm ID Mismatch — Real
    Chunk byte 32 = 0x01 (zstd) but Global Header declares
-   compression 0x03 (brotli).
+   compression 0x02 (brotli).
    Expected: report algorithm mismatch; discard chunk.
-
-D.33b.  Chunk Algorithm ID — 0x01 vs 0x02 (Normalized Match)
-   Chunk byte 32 = 0x01, Global Header declares compression 0x02.
-   After normalization (0x02 → 0x01), both are zstd.
-   Expected: match succeeds; chunk accepted.
 
 D.34.  SFC Directory — Manifest Hash Failure
    Inner Format ID 0x0050; Manifest BLAKE3 field incorrect.
@@ -3152,27 +3420,20 @@ D.46.  SFC Directory — Zero-Length File
    verified (BLAKE3 of zero bytes has a known fixed value);
    no chunk-range formula applied; labeled complete.
 
-D.47.  [Reserved — removed in draft-16, updated in draft-18]
-   This test case has been removed.  It originally tested implicit
-   headerless activation from non-zero bytes 32-33 without TLV 0x0040.
-   As of draft-18, bytes 32-33 unconditionally carry algorithm IDs
-   (Section 5.1); TLV 0x0040 is deprecated.  See D.59 for the
-   current normative behavior.
-
-D.48.  Protocol Limit Exceeded — N Too Large
+D.47.  Protocol Limit Exceeded — N Too Large
    Global Header declares N = 100,000 (exceeds hard limit of
    65,534).
    Expected: decoder reports format error; halts before allocating
    any memory for chunk structures.
 
-D.49.  RS Pipeline Order — Decompress Before Reconstruct
+D.48.  RS Pipeline Order — Decompress Before Reconstruct
    N=3, M=1; chunk 1 is missing; V=3 >= N=3.  Received chunks
    0, 2 (data) and chunk 3 (recovery) are in compressed form.
    Expected: decoder decompresses chunks 0, 2, 3 independently
    before applying RS; RS operates on uncompressed S-byte blocks;
    recovered chunk 1 matches the original byte-for-byte.
 
-D.50.  SFC Directory — Partial Extraction Case B (V < N)
+D.49.  SFC Directory — Partial Extraction Case B (V < N)
    Inner Format ID 0x0050; N=10, M=3; V=7 (insufficient for RS).
    Manifest chunks (0..K-1) present.  One file's complete chunk
    range [3..4] fully in working set; another file's range [6..8]
@@ -3181,82 +3442,82 @@ D.50.  SFC Directory — Partial Extraction Case B (V < N)
    verified; file with range [6..8] reported as pending (chunk 7
    absent); no RS reconstruction attempted.
 
-D.51.  SFC Directory — Partial Extraction Case A (V >= N)
-   Same as D.50 but M=3 recovery chunks are present so V=10 >= N=10.
+D.50.  SFC Directory — Partial Extraction Case A (V >= N)
+   Same as D.49 but M=3 recovery chunks are present so V=10 >= N=10.
    Expected: Case A applies; full RS reconstruction performed;
    all N data blocks available; all files extracted and verified;
    container labeled unverified (Trailer may be absent).
 
-D.52.  Unsupported Compression Algorithm
-   Valid Core file with compression algorithm 0x03 (brotli).
+D.51.  Unsupported Compression Algorithm
+   Valid Core file with compression algorithm 0x02 (brotli).
    Decoder does not implement brotli.
-   Expected: report "unsupported compression algorithm: 0x03";
+   Expected: report "unsupported compression algorithm: 0x02";
    produce no output; decoder is still conforming.
 
-D.53.  SFC Directory — Zero-Length File in Full Extraction
+D.52.  SFC Directory — Zero-Length File in Full Extraction
    Manifest contains file entry with file_size = 0.  All N data
    chunks present; full reassembly complete.
    Expected: decoder writes empty file; verifies per-file BLAKE3
    against BLAKE3 of the empty byte string; labels complete.
    Behavior is identical to partial extraction D.46.
 
-D.54.  Unsupported Erasure Algorithm
+D.53.  Unsupported Erasure Algorithm
    Valid SFC file with erasure algorithm 0x82 (vendor-specific).
    Decoder does not implement this algorithm.
    Expected: report "unsupported erasure algorithm: 0x82"; produce
    no output; decoder is still conforming.
 
-D.55.  Priority List — P > N
+D.54.  Priority List — P > N
    Global Header declares N=5, P=6, with 6 priority indices.
    Expected: report "priority count P > N"; halt (format error per
    Section 4.5 rule a).
 
-D.56.  Priority List — Duplicate Index
+D.55.  Priority List — Duplicate Index
    Global Header declares P=3; priority list contains [1, 2, 1].
    Expected: report "duplicate index in priority list"; halt (format
    error per Section 4.5 rule b).
 
-D.57.  Priority List — Out-of-Range Index
+D.56.  Priority List — Out-of-Range Index
    Global Header declares N=5; priority list contains index value 5
    (valid range is [0, 4]).
    Expected: report "priority index out of range [0, N-1]"; halt
    (format error per Section 4.5 rule c).
 
-D.58.  Priority List Outside SFC/P1 — Advisory Only
+D.57.  Priority List Outside SFC/P1 — Advisory Only
    Global Header has P=2, priority list [0, 1]; SFC/P1 bit (bit 4)
    is NOT set.  All indices in range [0, N-1], no duplicates.
    Expected: no format error; priority list treated as advisory;
    reassembly proceeds normally (Section 4.5 rule f).
 
-D.59.  Bytes 32-33 Always Carry Algorithm IDs
-   TLV 0x0040 absent.  Chunk header bytes 32-33 are 0x01 and 0x01
-   (zstd, RS GF(2^16)).  Global Header also declares 0x01 and 0x01.
+D.58.  Bytes 32-33 Always Carry Algorithm IDs
+   Chunk header bytes 32-33 are 0x01 and 0x01 (zstd, RS GF(2^16)).
+   Global Header also declares 0x01 and 0x01.
    Expected: bytes 32-33 are valid algorithm IDs; chunk accepted.
-   Decoder MAY use bytes 32-33 for headerless decompression regardless
-   of TLV 0x0040 presence (Section 5.1).
+   Decoder MAY use bytes 32-33 for headerless decompression
+   (Section 5.1).
 
-D.60.  P2 and P3 Bits Both Set
+D.59.  P2 and P3 Bits Both Set
    Global Header has both SFC/P2 bit (bit 5) and SFC/P3 bit (bit 6)
    set, and includes TLV 0x0020.
    Expected: decoder MUST report "SFC/P2 and SFC/P3 bits both set";
    MUST ignore P3 semantics; MUST proceed using SFC/P2 rules.
 
-D.61.  Inner File Size Zero — Valid Encoding
+D.60.  Inner File Size Zero — Valid Encoding
    Global Header declares Inner File Size = 0, N = 1, S = 65536.
    One data chunk with 65536 bytes of zero-padding.
    Expected: decoder performs standard reassembly; trims to 0 bytes;
    verifies global BLAKE3 hash (of empty byte string); produces a
    zero-length output file.
 
-D.61b.  Inner File Size Zero — Invalid N
+D.61.  Inner File Size Zero — Invalid N
    Global Header declares Inner File Size = 0, N = 3.
    Expected: decoder reports format error "Inner File Size = 0 with
-   N != 1" (Section 17.3); halts.
+   N != 1" (Section 18.3); halts.
 
 D.62.  Nominal Chunk Size S = 0
    Global Header declares S = 0.
    Expected: decoder reports format error (below minimum per Section
-   17.3); halts.
+   18.3); halts.
 
 D.63.  SFC Directory — Mixed Chunk K-1
    Inner Format ID 0x0050; S = 1,048,576 bytes; manifest_size = 600
@@ -3273,34 +3534,34 @@ D.64.  SFC/P2 Segment Header Validation
    at expected Segment Header position.
    Expected: report "missing or invalid Segment Header"; halt.
 
-D.64b.  SFC/P2 Segment Header Reserved Bytes Non-Zero
+D.65.  SFC/P2 Segment Header Reserved Bytes Non-Zero
    SFC/P2 segment with valid "SEG\0" magic; bytes 13-15 contain
    non-zero values; segment version <= decoder's version.
    Expected: report "non-zero reserved bytes in Segment Header";
    halt.
 
-D.65.  SFC/P2 Version Mismatch Across Segments
-   Two segments, same UUID; one has minor version 8, the other has
-   minor version 9.
+D.66.  SFC/P2 Version Mismatch Across Segments
+   Two segments, same UUID; one has minor version 1, the other has
+   minor version 2.
    Expected: report "version mismatch across segments"; halt.
 
-D.66.  Chunk End Marker "/CHK" Missing
+D.67.  Chunk End Marker "/CHK" Missing
    N=1, M=0; chunk payload present, BLAKE3 hash correct, but final
    4 bytes are not "/CHK".
    Expected: discard chunk; report "chunk end marker invalid".
 
-D.67.  Compressed Payload Length Exceeds 2*S
+D.68.  Compressed Payload Length Exceeds 2*S
    N=1, M=0, S=65536; chunk declares compressed payload length =
    200,000 (> 2*65536 = 131,072).
    Expected: reject chunk before reading payload; report "compressed
    payload length exceeds 2*S".
 
-D.68.  Odd Nominal Chunk Size S
+D.69.  Odd Nominal Chunk Size S
    Global Header declares S = 65537 (odd number).
    Expected: report format error (S must be even per Section 6.4);
    halt.
 
-D.69.  Erasure Algorithm 0x00 with M > 0
+D.70.  Erasure Algorithm 0x00 with M > 0
    Global Header declares erasure algorithm 0x00, M = 2.
    Expected: report "erasure algorithm 0x00 with M > 0"; halt
    before any chunk processing.

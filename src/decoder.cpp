@@ -64,13 +64,13 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
     uint32_t H = read_u32_le(
         std::span<const uint8_t, 4>{file_bytes.data() + 8, 4});
 
-    // Bounds-check H (§17.3): H must satisfy kMinHeaderLength-4 <= H <= kMaxHeaderLength-4.
-    // The spec says H is the length excluding the H field itself, so total region = H+4.
-    if (H + 4 < limits::kMinHeaderLength || H + 4 > limits::kMaxHeaderLength) {
+    // Bounds-check H (§18.3): limits apply to the H field value, not the region size.
+    // Total region size = H+4; maximum allocatable buffer = 65,540 bytes.
+    if (H < limits::kMinHeaderLength || H > limits::kMaxHeaderLength) {
         return std::unexpected(SfcError{
             ErrorCode::HeaderLengthOutOfBounds,
-            std::format("H={} gives region size {} out of bounds [{},{}]",
-                        H, H+4, limits::kMinHeaderLength, limits::kMaxHeaderLength)
+            std::format("H={} out of bounds [{},{}]",
+                        H, limits::kMinHeaderLength, limits::kMaxHeaderLength)
         });
     }
     if (file_bytes.size() < 8 + static_cast<size_t>(H) + 4) {
@@ -98,6 +98,15 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
     if (has_p2 && has_p3) {
         return std::unexpected(SfcError{
             ErrorCode::P2AndP3BothSet, "P2 (SplitTransport) and P3 (Http) flags both set"
+        });
+    }
+    // D2b-extra: SPLIT_TRANSPORT bit (0) set without P2 Profile bit (5) is a format error (§9.4).
+    const bool has_split_transport =
+        (hdr.flags & (1u << static_cast<uint16_t>(FlagBit::SplitTransport))) != 0;
+    if (has_split_transport && !has_p2) {
+        return std::unexpected(SfcError{
+            ErrorCode::SplitTransportWithoutP2,
+            "SPLIT_TRANSPORT bit (0) set without SFC/P2 Profile bit (5)"
         });
     }
 
@@ -166,9 +175,27 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
         // D3: parse one chunk.
         auto chunk_res = parse_chunk(file_bytes.subspan(pos));
         if (!chunk_res) {
-            // Chunk-level parse error (magic, truncation, end marker) → skip.
-            // We can't easily skip without knowing where the next chunk starts,
-            // so halt on structural errors.
+            if (chunk_res.error().code == ErrorCode::UnknownChunkType ||
+                chunk_res.error().code == ErrorCode::NonZeroChunkReservedBytes ||
+                chunk_res.error().code == ErrorCode::ChunkEndMarkerInvalid) {
+                // §9.4: chunk-level errors — discard this chunk and continue.
+                // Peek payload_len at fixed offset 28 to find the next chunk
+                // boundary (48-byte header + payload + 36-byte trailer).
+                constexpr size_t kHdrSize = 48;
+                constexpr size_t kTrlSize = 36;
+                constexpr size_t kPayLenOff = 28;
+                auto remaining = file_bytes.subspan(pos);
+                if (remaining.size() >= kHdrSize) {
+                    uint32_t plen = read_u32_le(
+                        std::span<const uint8_t, 4>{remaining.data() + kPayLenOff, 4});
+                    size_t skip = kHdrSize + plen + kTrlSize;
+                    if (skip <= remaining.size()) {
+                        pos += skip;
+                        continue;
+                    }
+                }
+                // Can't determine boundary — treat as truncation and halt.
+            }
             return std::unexpected(chunk_res.error());
         }
         auto& [chunk, consumed] = *chunk_res;
@@ -241,28 +268,36 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
             }
         } else {
             // Need RS reconstruction.
-            // Decompress all available chunks and build RsChunk list.
-            std::vector<RsChunk> rs_inputs;
-            rs_inputs.reserve(hdr.n);
-
+            // Decompress all available chunks into a candidate pool so we can
+            // retry with a different N-subset if the initial matrix is singular
+            // (§6.4: discard one recovery chunk and retry).
+            std::vector<RsChunk> candidates;
+            candidates.reserve(working_set.size());
             for (const auto& c : working_set) {
                 auto dec = decompress(c.payload, algo, hdr.s);
                 if (!dec) continue;  // skip malformed chunks
-                rs_inputs.push_back(RsChunk{
-                    c.header.chunk_index, std::move(*dec)
-                });
-                if (rs_inputs.size() == hdr.n) break;
+                candidates.push_back(RsChunk{c.header.chunk_index, std::move(*dec)});
             }
 
-            if (rs_inputs.size() < hdr.n) {
-                // Shouldn't happen if V >= N, but guard anyway.
+            if (candidates.size() < hdr.n) {
                 return std::unexpected(SfcError{
                     ErrorCode::InsufficientChunks,
                     "not enough decompressible chunks for RS"
                 });
             }
 
-            auto rs_res = rs_reconstruct(rs_inputs, hdr.n, hdr.m, hdr.s);
+            // Try successive N-subsets until one inverts (singular matrix retry).
+            // For conforming encoders this loop executes exactly once.
+            Result<std::vector<std::vector<uint8_t>>> rs_res = std::unexpected(SfcError{
+                ErrorCode::MatrixSingular, "RS reconstruction failure: no valid chunk subset found"
+            });
+            std::vector<RsChunk> subset(hdr.n);
+            for (size_t start = 0; start + hdr.n <= candidates.size(); ++start) {
+                std::copy_n(candidates.begin() + static_cast<std::ptrdiff_t>(start),
+                            hdr.n, subset.begin());
+                rs_res = rs_reconstruct(subset, hdr.n, hdr.m, hdr.s);
+                if (rs_res || rs_res.error().code != ErrorCode::MatrixSingular) break;
+            }
             if (!rs_res) return std::unexpected(rs_res.error());
             data_blocks = std::move(*rs_res);
         }

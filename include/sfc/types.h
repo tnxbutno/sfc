@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file types.h
-/// @brief Core types, enums, and protocol constants for SFC format (draft-18).
+/// @brief Core types, enums, and protocol constants for SFC format (draft-sfc-container-format-01).
 ///
 /// This header defines all value types, magic bytes, version numbers,
 /// and hard protocol limits from the SFC specification. No logic here —
@@ -40,8 +40,8 @@ inline constexpr std::array<uint8_t, 4> kManifestMagic = {0x4D, 0x46, 0x53, 0x54
 // Version
 // ---------------------------------------------------------------------------
 
-inline constexpr uint16_t kMajorVersion = 1;
-inline constexpr uint16_t kMinorVersion = 8;
+inline constexpr uint16_t kMajorVersion = 0;
+inline constexpr uint16_t kMinorVersion = 1;
 
 // ---------------------------------------------------------------------------
 // Fixed structure sizes
@@ -68,11 +68,10 @@ enum class ChunkType : uint32_t {
 
 /// Compression algorithm IDs (Section 7.1).
 enum class CompressionAlgo : uint8_t {
-    Identity       = 0x00,  ///< No compression (MUST support)
-    Zstd           = 0x01,  ///< zstd RFC 8878 (MUST support)
-    ZstdDeprecated = 0x02,  ///< Deprecated synonym for 0x01 (MUST decode as 0x01)
-    Brotli         = 0x03,  ///< brotli RFC 7932 (SHOULD support)
-    Lz4Frame       = 0x04,  ///< LZ4 Frame Format (SHOULD support)
+    Identity  = 0x00,  ///< No compression (MUST support)
+    Zstd      = 0x01,  ///< zstd RFC 8878 (MUST support)
+    Brotli    = 0x02,  ///< brotli RFC 7932 (SHOULD support)
+    Lz4Frame  = 0x03,  ///< LZ4 Frame Format (SHOULD support)
 };
 
 /// Erasure coding algorithm IDs (Section 6.1).
@@ -120,7 +119,7 @@ enum class FlagBit : uint16_t {
 };
 
 // ---------------------------------------------------------------------------
-// Protocol hard limits (Section 17.3)
+// Protocol hard limits (Section 18.3)
 // ---------------------------------------------------------------------------
 
 namespace limits {

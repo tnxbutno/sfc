@@ -95,6 +95,13 @@ prepare_directory_inner(std::vector<DirectoryInputFile> files, EncodeParams para
             ErrorCode::FieldBelowMinimum, "P5 directory must contain at least one file (F >= 1)"
         });
     }
+    // P5 requires S >= 8 so Manifest Magic and B fit in chunk 0 (§16.1).
+    if (params.s < 8) {
+        return std::unexpected(SfcError{
+            ErrorCode::FieldBelowMinimum,
+            std::format("SFC/P5 requires S >= 8; got S={}", params.s)
+        });
+    }
 
     // ------------------------------------------------------------------
     // Step 1: Validate all paths.
@@ -260,7 +267,17 @@ extract_directory_full(std::span<const uint8_t> inner_content) {
     // ------------------------------------------------------------------
     // Validate byte_offset consistency (§16.7).
     // First file must start at manifest_sz; entries must be contiguous.
+    // Path length L must be at least 1 (§16.7 step 2f, §18.3).
     // ------------------------------------------------------------------
+    for (size_t i = 0; i < mfst.entries.size(); ++i) {
+        if (mfst.entries[i].path.empty()) {
+            return std::unexpected(SfcError{
+                ErrorCode::EmptyInnerFilename,
+                std::format("manifest entry {}: path length L=0", i)
+            });
+        }
+    }
+    const uint64_t content_size = static_cast<uint64_t>(inner_content.size());
     uint64_t expected_offset = manifest_sz;
     for (size_t i = 0; i < mfst.entries.size(); ++i) {
         const auto& e = mfst.entries[i];
@@ -269,6 +286,13 @@ extract_directory_full(std::span<const uint8_t> inner_content) {
                 ErrorCode::ManifestOffsetSizeInconsistency,
                 std::format("entry {}: byte_offset {} != expected {}",
                             i, e.byte_offset, expected_offset)
+            });
+        }
+        if (e.file_size > content_size - expected_offset) {
+            return std::unexpected(SfcError{
+                ErrorCode::ManifestOffsetSizeInconsistency,
+                std::format("entry {}: file_size {} overflows inner content at offset {}",
+                            i, e.file_size, expected_offset)
             });
         }
         expected_offset += e.file_size;
@@ -430,6 +454,42 @@ extract_directory_partial(const std::vector<ParsedChunk>& working_set,
     auto mfst_res = parse_manifest(manifest_bytes);
     if (!mfst_res) return std::unexpected(mfst_res.error());
     const Manifest& mfst = *mfst_res;
+
+    // ------------------------------------------------------------------
+    // Validate byte_offset consistency (§16.8 Case B, same as §16.7 step 2f).
+    // Also validate L >= 1 (§16.7 step 2f, §18.3).
+    // A malicious manifest could use crafted byte_offset values to cause
+    // out-of-bounds reads when slicing concatenated chunk data.
+    // ------------------------------------------------------------------
+    for (size_t i = 0; i < mfst.entries.size(); ++i) {
+        if (mfst.entries[i].path.empty()) {
+            return std::unexpected(SfcError{
+                ErrorCode::EmptyInnerFilename,
+                std::format("manifest entry {}: path length L=0", i)
+            });
+        }
+    }
+    {
+        uint64_t expected_offset = manifest_sz;
+        for (size_t i = 0; i < mfst.entries.size(); ++i) {
+            const auto& e = mfst.entries[i];
+            if (e.byte_offset != expected_offset) {
+                return std::unexpected(SfcError{
+                    ErrorCode::ManifestOffsetSizeInconsistency,
+                    std::format("partial entry {}: byte_offset {} != expected {}",
+                                i, e.byte_offset, expected_offset)
+                });
+            }
+            if (e.byte_offset + e.file_size > hdr.inner_file_size) {
+                return std::unexpected(SfcError{
+                    ErrorCode::ManifestOffsetSizeInconsistency,
+                    std::format("partial entry {}: byte_offset+file_size {} exceeds Inner File Size {}",
+                                i, e.byte_offset + e.file_size, hdr.inner_file_size)
+                });
+            }
+            expected_offset += e.file_size;
+        }
+    }
 
     // ------------------------------------------------------------------
     // For each file in the manifest: determine covering chunks and extract

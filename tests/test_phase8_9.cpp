@@ -318,7 +318,7 @@ TEST(Decode, BadMagic_Error) {
 
 TEST(Decode, TruncatedAfterPreamble_Error) {
     // Valid preamble but nothing after it.
-    std::vector<uint8_t> buf = {0x53, 0x46, 0x43, 0x00, 0x01, 0x00, 0x08, 0x00};
+    std::vector<uint8_t> buf = {0x53, 0x46, 0x43, 0x00, 0x00, 0x00, 0x01, 0x00};
     auto res = decode(buf);
     ASSERT_FALSE(res.has_value());
     // Too small to read H → HeaderLengthOutOfBounds.

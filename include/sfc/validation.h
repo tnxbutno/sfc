@@ -81,9 +81,7 @@ namespace sfc {
 [[nodiscard]] VoidResult validate_chunk_index(const ParsedChunk& chunk,
                                                const GlobalHeader& hdr);
 
-/// @brief D4d: Verify chunk algorithm IDs match the Global Header after normalisation.
-///
-/// Per §5.1: compression 0x02 normalises to 0x01 for this comparison.
+/// @brief D4d: Verify chunk algorithm IDs match the Global Header.
 ///
 /// @param chunk ParsedChunk.
 /// @param hdr   Parsed Global Header.
