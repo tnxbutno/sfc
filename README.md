@@ -4,6 +4,8 @@ A C++23 library and CLI implementing the **SFC format**: a binary container desi
 reliable storage and transport under adverse conditions — partial data loss, corruption,
 or out-of-order delivery.
 
+A desktop GUI is available at [tnxbutno/sfc-gui](https://github.com/tnxbutno/sfc-gui).
+
 ## Why SFC exists
 
 Some data needs to survive the worst possible conditions: satellite uplinks that drop
