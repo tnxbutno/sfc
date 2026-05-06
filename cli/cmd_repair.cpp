@@ -134,9 +134,8 @@ void setup_repair(CLI::App& app) {
                                 std::filesystem::weakly_canonical(
                                     std::filesystem::path(out_dir) / f.path);
                             const std::string dest_str = dest_path.string();
-                            const std::string root_str = canonical_root.string();
-                            if (dest_str.size() < root_str.size() ||
-                                dest_str.substr(0, root_str.size()) != root_str) {
+                            const auto rel = dest_path.lexically_relative(canonical_root);
+                            if (rel.empty() || *rel.begin() == "..") {
                                 std::println(stderr,
                                     "sfc repair: rejected path traversal: {}", f.path);
                                 if (worst < 2) worst = 2;
