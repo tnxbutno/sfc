@@ -4,7 +4,7 @@ A C++ library and CLI implementing the **SFC format**: a binary container design
 reliable storage and transport under adverse conditions — partial data loss, corruption,
 or out-of-order delivery.
 
-A desktop GUI is available at [tnxbutno/sfc-gui](https://github.com/tnxbutno/sfc-gui).
+A desktop GUI is available in the [sfc-gui](https://github.com/tnxbutno/sfc-gui).
 
 ## Why SFC exists
 
@@ -56,9 +56,9 @@ Both profiles are optional in the spec. The flag bits and TLV tags for both are 
 
 BLAKE3 and GoogleTest are fetched automatically by CMake.
 
-## Web demo
+## WASM Web Demo
 
-Try it at **[tnxbutno.github.io/sfc](https://tnxbutno.github.io/sfc)** — pack and unpack SFC files directly in the browser, no installation required. The entire SFC library is compiled to WebAssembly via Emscripten; no data leaves your device.
+Try it [online](https://tnxbutno.github.io/sfc) — pack, unpack, info and verify SFC files directly in the browser, no installation required. The entire SFC library is compiled to WebAssembly via Emscripten; no data leaves your device.
 
 To build and test the WASM module locally:
 
@@ -70,7 +70,7 @@ node wasm/test_wasm.js            # Node.js encode/decode/info/verify test suite
 open web/index.html               # browser UI (no server needed — WASM is inlined)
 ```
 
-All dependencies (zstd, brotli, lz4, blake3) are fetched and compiled automatically; no system packages required. CI runs the Node.js tests and deploys `web/` to GitHub Pages on every push to `main`. To enable the deployment, go to repository Settings → Pages → Build and deployment → Source → **GitHub Actions** (one-time setup).
+All dependencies (zstd, brotli, lz4, blake3) are fetched and compiled automatically; no system packages required. 
 
 ## Installation
 
