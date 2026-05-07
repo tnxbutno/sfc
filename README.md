@@ -30,9 +30,18 @@ conditions is also just interesting engineering.
 | Erasure coding | GF(2¹⁶) RS via systematic Cauchy matrix; configurable N data chunks + M recovery chunks |
 | Integrity | BLAKE3 per-chunk + per-file |
 | Compression | zstd · brotli · LZ4 · none (passthrough) |
-| **Split transport** | Distribute one file across independent carriers; reorder-tolerant, missing-carrier-tolerant |
-| **Multi-file directory** | Bundle multiple named files with per-file BLAKE3 and UTF-8 paths |
+| Split transport | Distribute one file across independent carriers; reorder-tolerant, missing-carrier-tolerant |
+| Multi-file directory | Bundle multiple named files with per-file BLAKE3 and UTF-8 paths |
 | Error model | `std::expected` throughout; no exceptions; typed error codes |
+
+## Out of scope
+
+Two profiles defined in the spec are not implemented:
+
+- **HTTP delivery hints** — the spec allows storing per-chunk byte offsets in the file so HTTP clients can fetch individual chunks via Range requests without scanning. Implementing this requires HTTP server integration, which is outside the scope of a file-format library.
+- **Format preprocessing** — the spec allows encoders to convert content before packing (e.g. JPEG → JPEG XL, MP4 with index at end → fragmented MP4) and record the original format in metadata. Implementing this requires bundling external format converters.
+
+Both profiles are optional in the spec. The flag bits and TLV tags for both are defined and validated by the decoder.
 
 ## Prerequisites
 
