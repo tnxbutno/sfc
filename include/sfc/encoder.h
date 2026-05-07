@@ -30,7 +30,7 @@ struct EncodeParams {
     std::string     filename;    ///< Inner filename (plain name, no path separator).
     uint16_t        flags = 0;   ///< Extra flags for the GlobalHeader (profile bits, etc.).
     FileMetadata    metadata;    ///< Optional user metadata stored in TLV fields.
-    std::vector<uint32_t> priority_list; ///< Priority chunk indices for SFC/P1 Class P formats (§12.4).
+    std::vector<uint32_t> priority_list; ///< Priority chunk indices for image profile (P1) Class P formats (§12.4).
                                          ///< For Class S (JPEG Baseline), auto-computed if empty.
 };
 

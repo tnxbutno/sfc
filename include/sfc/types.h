@@ -108,13 +108,13 @@ enum class InnerFormatId : uint16_t {
 /// Profile flag bit positions within the 2-byte Flags field (Section 4.6).
 /// Usage: (flags >> static_cast<uint16_t>(bit)) & 1
 enum class FlagBit : uint16_t {
-    SplitTransport = 0,   ///< Bit 0: SPLIT_TRANSPORT
+    SplitTransport   = 0,  ///< Bit 0: file uses split transport
     // Bits 1-3: reserved permanently
-    P1Image        = 4,   ///< Bit 4: SFC/P1
-    P2Split        = 5,   ///< Bit 5: SFC/P2
-    P3Http         = 6,   ///< Bit 6: SFC/P3
-    P4Preprocess   = 7,   ///< Bit 7: SFC/P4
-    P5Directory    = 8,   ///< Bit 8: SFC/P5
+    ImageProfile     = 4,  ///< Bit 4: image profile (P1, §12)
+    SplitProfile     = 5,  ///< Bit 5: split transport profile (P2, §13)
+    HttpProfile      = 6,  ///< Bit 6: HTTP delivery profile (P3, §14)
+    PreprocessProfile = 7, ///< Bit 7: preprocessing profile (P4, §15)
+    DirectoryProfile = 8,  ///< Bit 8: multi-file directory profile (P5, §16)
     // Bits 9-15: reserved for future profiles
 };
 
@@ -135,9 +135,9 @@ inline constexpr uint32_t kMaxHeaderLength        = 65'536;               ///< H
 inline constexpr uint32_t kMaxTlvValueLength      = 16'384;              ///< TLV value max
 inline constexpr uint32_t kMinManifestBodyB       = 57;                   ///< B min (1 file, 1-byte path)
 inline constexpr uint32_t kMaxManifestBodyB       = 67'108'864;           ///< B max = 64 MB
-inline constexpr uint32_t kMaxFileCount           = 1'048'576;            ///< F max (P5)
-inline constexpr uint16_t kMinPathLength          = 1;                    ///< L min (P5)
-inline constexpr uint16_t kMaxPathLength          = 4'096;                ///< L max (P5)
+inline constexpr uint32_t kMaxFileCount           = 1'048'576;            ///< F max (directory profile)
+inline constexpr uint16_t kMinPathLength          = 1;                    ///< L min (directory profile)
+inline constexpr uint16_t kMaxPathLength          = 4'096;                ///< L max (directory profile)
 inline constexpr uint32_t kMaxMetadataStringLength = 4'096;               ///< max UTF-8 bytes per metadata TLV
 
 }  // namespace limits

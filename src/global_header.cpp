@@ -297,17 +297,17 @@ VoidResult validate_global_header(const GlobalHeader& hdr) {
     // Profile TLV tags must only appear when the corresponding flag bit is set (§3.2).
     for (const auto& tlv : hdr.tlv_fields) {
         if (tlv.tag == TlvTag::kChunkOffsetIndex &&
-            !(hdr.flags & (1u << static_cast<uint16_t>(FlagBit::P3Http)))) {
+            !(hdr.flags & (1u << static_cast<uint16_t>(FlagBit::HttpProfile)))) {
             return std::unexpected(SfcError{
                 ErrorCode::ProfileTlvWithoutBit,
-                "kChunkOffsetIndex TLV present but P3Http flag bit not set"
+                "kChunkOffsetIndex TLV present but HTTP delivery profile (P3) flag bit not set"
             });
         }
         if (tlv.tag == TlvTag::kOriginalFormatId &&
-            !(hdr.flags & (1u << static_cast<uint16_t>(FlagBit::P4Preprocess)))) {
+            !(hdr.flags & (1u << static_cast<uint16_t>(FlagBit::PreprocessProfile)))) {
             return std::unexpected(SfcError{
                 ErrorCode::ProfileTlvWithoutBit,
-                "kOriginalFormatId TLV present but P4Preprocess flag bit not set"
+                "kOriginalFormatId TLV present but preprocessing profile (P4) flag bit not set"
             });
         }
     }

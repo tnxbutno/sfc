@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file manifest.h
-/// @brief Pure parse/serialize for the SFC/P5 Manifest (§16.2, §16.3).
+/// @brief Pure parse/serialize for the directory Manifest (P5, §16.2, §16.3).
 ///
 /// Manifest binary layout:
 ///   [0]     4    "MFST" magic

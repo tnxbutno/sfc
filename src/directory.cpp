@@ -1,5 +1,5 @@
 /// @file directory.cpp
-/// @brief SFC/P5 Directory profile implementation.
+/// @brief Directory profile implementation (P5, §16).
 ///
 /// Encoding layout (inner_content):
 ///   [0 .. manifest_size-1]  Manifest  (8+B+32 bytes)
@@ -82,24 +82,25 @@ namespace sfc {
 // prepare_directory_inner  (shared by encode_directory and encode_directory_split)
 // ===========================================================================
 
-/// @brief Validate, sort, hash, and serialise directory files into P5 inner content.
+/// @brief Validate, sort, hash, and serialise directory files into inner content.
 ///
-/// Performs steps 1-8 of the P5 encoding pipeline, producing the raw inner_content
-/// bytes (manifest || file data) and the updated EncodeParams with P5 flags set.
+/// Performs steps 1-8 of the directory encoding pipeline (P5, §16), producing
+/// the raw inner_content bytes (manifest || file data) and the updated EncodeParams
+/// with directory profile flags set.
 /// Both encode_directory and encode_directory_split delegate here.
 [[nodiscard]] static Result<std::pair<std::vector<uint8_t>, EncodeParams>>
 prepare_directory_inner(std::vector<DirectoryInputFile> files, EncodeParams params) {
-    // P5 requires at least one file (F >= 1, §16.2).
+    // Directory profile requires at least one file (F >= 1, §16.2).
     if (files.empty()) {
         return std::unexpected(SfcError{
-            ErrorCode::FieldBelowMinimum, "P5 directory must contain at least one file (F >= 1)"
+            ErrorCode::FieldBelowMinimum, "directory must contain at least one file (F >= 1)"
         });
     }
-    // P5 requires S >= 8 so Manifest Magic and B fit in chunk 0 (§16.1).
+    // Directory profile requires S >= 8 so Manifest Magic and B fit in chunk 0 (§16.1).
     if (params.s < 8) {
         return std::unexpected(SfcError{
             ErrorCode::FieldBelowMinimum,
-            std::format("SFC/P5 requires S >= 8; got S={}", params.s)
+            std::format("directory profile requires S >= 8; got S={}", params.s)
         });
     }
 
@@ -194,10 +195,10 @@ prepare_directory_inner(std::vector<DirectoryInputFile> files, EncodeParams para
     }
 
     // ------------------------------------------------------------------
-    // Step 8: Override format_id, set P5 flag, clear inner filename.
+    // Step 8: Override format_id, set directory profile flag, clear inner filename.
     // ------------------------------------------------------------------
     params.format_id  = static_cast<uint16_t>(InnerFormatId::SfcDirectory);
-    params.flags     |= static_cast<uint16_t>(1u << static_cast<uint16_t>(FlagBit::P5Directory));
+    params.flags     |= static_cast<uint16_t>(1u << static_cast<uint16_t>(FlagBit::DirectoryProfile));
     params.filename   = "";
 
     return std::make_pair(std::move(inner_content), std::move(params));

@@ -47,7 +47,7 @@ void setup_info(CLI::App& app) {
                 continue;
             }
 
-            // ── Check for segment header (P2) ─────────────────────────────
+            // ── Check for split-transport segment header ───────────────────
             auto seg = cli::parse_segment_hdr_from_file(data);
 
             // ── Print ─────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ void setup_info(CLI::App& app) {
             std::println("UUID:       {}", cli::format_uuid(hdr->uuid));
             std::println("Version:    {}.{}", 1, 8);  // from preamble, hardcode spec version
 
-            // Profile line: show segment info for P2
+            // Profile line: show segment info for split-transport files
             if (seg) {
                 std::println("Profile:    {} [segment {}/{}{}]",
                              cli::profile_name(hdr->flags),

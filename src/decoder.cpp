@@ -92,21 +92,22 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
     auto val_res = validate_global_header(hdr);
     if (!val_res) return std::unexpected(val_res.error());
 
-    // D2b-extra: P2 and P3 flags are mutually exclusive (§13.6).
-    const bool has_p2 = (hdr.flags & (1u << static_cast<uint16_t>(FlagBit::P2Split))) != 0;
-    const bool has_p3 = (hdr.flags & (1u << static_cast<uint16_t>(FlagBit::P3Http))) != 0;
-    if (has_p2 && has_p3) {
+    // D2b-extra: split transport (P2) and HTTP delivery (P3) profiles are mutually exclusive (§13.6).
+    const bool has_split_profile = (hdr.flags & (1u << static_cast<uint16_t>(FlagBit::SplitProfile))) != 0;
+    const bool has_http_profile  = (hdr.flags & (1u << static_cast<uint16_t>(FlagBit::HttpProfile)))  != 0;
+    if (has_split_profile && has_http_profile) {
         return std::unexpected(SfcError{
-            ErrorCode::P2AndP3BothSet, "P2 (SplitTransport) and P3 (Http) flags both set"
+            ErrorCode::SplitAndHttpProfilesBothSet,
+            "split transport (P2) and HTTP delivery (P3) profile flags both set"
         });
     }
-    // D2b-extra: SPLIT_TRANSPORT bit (0) set without P2 Profile bit (5) is a format error (§9.4).
+    // D2b-extra: SPLIT_TRANSPORT bit (0) set without split transport profile bit (P2, bit 5) is a format error (§9.4).
     const bool has_split_transport =
         (hdr.flags & (1u << static_cast<uint16_t>(FlagBit::SplitTransport))) != 0;
-    if (has_split_transport && !has_p2) {
+    if (has_split_transport && !has_split_profile) {
         return std::unexpected(SfcError{
-            ErrorCode::SplitTransportWithoutP2,
-            "SPLIT_TRANSPORT bit (0) set without SFC/P2 Profile bit (5)"
+            ErrorCode::SplitTransportWithoutSplitProfile,
+            "SPLIT_TRANSPORT bit (0) set without split transport profile bit (P2, bit 5)"
         });
     }
 
@@ -140,14 +141,14 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
         }
         // If trailer_res is an error (magic wrong / reserved bytes non-zero),
         // the last 64 bytes are simply the last chunk's trailer — that is fine
-        // for non-terminal P2 segments; for simple files we'll detect at the end.
+        // for non-terminal split-transport segments; for simple files we'll detect at the end.
     }
 
     // -----------------------------------------------------------------------
     // D3 + D4: Parse and validate each chunk
     // -----------------------------------------------------------------------
     // Chunks begin immediately after the Global Header Region.
-    // For P2 segments (SPLIT_TRANSPORT set) a 16-byte Segment Header follows
+    // For split-transport segments (SPLIT_TRANSPORT set) a 16-byte Segment Header follows
     // the Global Header Region before the first chunk — skip it.
     size_t pos = 8 + header_region_size;
     const bool split_transport =
@@ -163,7 +164,7 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
     }
 
     // The file ends either at the Trailer (if present) or at the file end.
-    // For a simple (non-P2) file the Trailer is the last 64 bytes.
+    // For a simple (non-split) file the Trailer is the last 64 bytes.
     const size_t chunks_end = trailer_verified
         ? file_bytes.size() - 64
         : file_bytes.size();

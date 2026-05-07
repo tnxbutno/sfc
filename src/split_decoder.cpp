@@ -1,5 +1,5 @@
 /// @file split_decoder.cpp
-/// @brief SFC/P2 Split Transport decoder.
+/// @brief Split transport decoder (P2, §13).
 ///
 /// Strategy for decode_split:
 ///   1. Parse each segment into its structural components (header_region,
@@ -331,14 +331,14 @@ decode_multi(std::span<const std::vector<uint8_t>> files) {
         const uint16_t flags = read_u16_le(
             std::span<const uint8_t, 2>{f.data() + 339, 2});
 
-        // Bit 0 = SPLIT_TRANSPORT → this file is a P2 segment.
+        // Bit 0 = SPLIT_TRANSPORT → this file is a split-transport segment (P2, §13).
         const bool is_p2 = (flags & (1u << static_cast<uint16_t>(FlagBit::SplitTransport))) != 0;
 
         infos.push_back({uuid, is_p2});
     }
 
     // -----------------------------------------------------------------
-    // Step 2: Group P2 files by UUID; decode regular files individually.
+    // Step 2: Group split-transport files by UUID; decode regular files individually.
     // -----------------------------------------------------------------
     std::vector<MultiDecodeEntry> result;
     std::vector<bool> processed(files.size(), false);
@@ -353,7 +353,7 @@ decode_multi(std::span<const std::vector<uint8_t>> files) {
             if (!res) return std::unexpected(res.error());
             result.push_back({infos[i].uuid, std::move(*res)});
         } else {
-            // P2 segment: collect all segments with the same UUID.
+            // Split-transport segment: collect all segments with the same UUID.
             std::vector<std::vector<uint8_t>> segs;
             segs.push_back(files[i]);
 

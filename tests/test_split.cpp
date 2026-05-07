@@ -1,5 +1,5 @@
-/// @file test_p2.cpp
-/// @brief Tests for SFC/P2 Split Transport: encode_split, decode_split, decode_multi.
+/// @file test_split.cpp
+/// @brief Tests for split transport (P2, §13): encode_split, decode_split, decode_multi.
 
 #include "sfc/split_decoder.h"
 #include "sfc/split_encoder.h"
@@ -254,7 +254,7 @@ TEST(DecodeSplit, DuplicateSegmentIndex_Error) {
 }
 
 TEST(DecodeSplit, InconsistentHeaders_Error) {
-    // Produce two separate 1-segment P2 files with different content.
+    // Produce two separate 1-segment split-transport files with different content.
     auto p1 = make_params(CompressionAlgo::Identity, 64, 0, 0x21);
     auto p2 = make_params(CompressionAlgo::Identity, 64, 0, 0x22);
     auto c1  = make_content(64);
@@ -278,7 +278,7 @@ TEST(DecodeSplit, InconsistentHeaders_Error) {
 // ===========================================================================
 
 TEST(DecodeMulti, SingleRegularFile) {
-    // A regular SFC file (no P2 flags) should be decoded individually.
+    // A regular SFC file (no split-transport flags) should be decoded individually.
     EncodeParams p{};
     p.m = 0; p.s = 64; p.algo = CompressionAlgo::Identity;
     p.uuid = make_uuid(0x30);
@@ -286,7 +286,7 @@ TEST(DecodeMulti, SingleRegularFile) {
 
     auto content = make_content(50);
 
-    // Use encode() to build a non-P2 file.
+    // Use encode() to build a regular (non-split) file.
     auto enc = encode(content, p);
     ASSERT_TRUE(enc.has_value()) << enc.error().detail;
 
@@ -330,7 +330,7 @@ TEST(DecodeMulti, TwoRegularFiles_DifferentUUIDs) {
     EXPECT_TRUE(found2);
 }
 
-TEST(DecodeMulti, P2Segments_GroupedByUUID) {
+TEST(DecodeMulti, SplitSegments_GroupedByUUID) {
     auto p       = make_params(CompressionAlgo::Identity, 64, 0, 0x50);
     auto content = make_content(200);
 
@@ -346,8 +346,8 @@ TEST(DecodeMulti, P2Segments_GroupedByUUID) {
     EXPECT_EQ((*res)[0].result.content, content);
 }
 
-TEST(DecodeMulti, MixedRegularAndP2) {
-    // One regular file + one P2 group (2 segments).
+TEST(DecodeMulti, MixedRegularAndSplit) {
+    // One regular file + one split-transport group (2 segments).
     EncodeParams preg{};
     preg.m = 0; preg.s = 64; preg.algo = CompressionAlgo::Identity;
     preg.uuid = make_uuid(0x60); preg.timestamp = 0;

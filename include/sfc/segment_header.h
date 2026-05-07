@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file segment_header.h
-/// @brief Pure parse/serialize for the SFC/P2 Segment Header (§13.1, 16 bytes).
+/// @brief Pure parse/serialize for the split-transport Segment Header (P2, §13.1, 16 bytes).
 ///
 /// Layout:
 ///   [0]  4   "SEG\0" magic (0x53 0x45 0x47 0x00)
@@ -18,7 +18,7 @@
 
 namespace sfc {
 
-/// Parsed Segment Header (SFC/P2).
+/// Parsed Segment Header for split-transport files (P2, §13.1).
 struct SegmentHeader {
     uint32_t segment_index;  ///< 0-based index of this segment.
     uint32_t total_count;    ///< Total number of segments for this UUID.

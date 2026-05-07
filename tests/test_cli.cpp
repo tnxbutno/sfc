@@ -424,7 +424,7 @@ TEST_F(CliTest, VerifyMissingFile) {
 }
 
 // ===========================================================================
-// P2 split: pack -n, segment naming, verify, unpack with RS recovery
+// Split transport: pack -n, segment naming, verify, unpack with RS recovery
 // ===========================================================================
 
 TEST_F(CliTest, SplitSegmentNaming) {
@@ -583,7 +583,7 @@ TEST_F(CliTest, RepairPartialResult_ExitsTwo) {
 }
 
 // ===========================================================================
-// P5 directory round-trip
+// Directory round-trip
 // ===========================================================================
 
 TEST_F(CliTest, DirectoryRoundTrip) {
@@ -652,7 +652,7 @@ TEST_F(CliTest, DirectorySplitRoundTrip) {
 }
 
 // ===========================================================================
-// P2 auto-discovery: pass one segment, tool finds the rest
+// Split-transport auto-discovery: pass one segment, tool finds the rest
 // ===========================================================================
 
 TEST_F(CliTest, AutoDiscover_UnpackFromOneSegment) {
@@ -698,7 +698,7 @@ TEST_F(CliTest, AutoDiscover_RepairFromOneSegment) {
 }
 
 TEST_F(CliTest, AutoDiscover_NoTriggerForRegularFile) {
-    // A regular (non-P2) file passed alone must not trigger discovery.
+    // A regular (non-split) file passed alone must not trigger discovery.
     const auto src    = make_file("solo.bin", iota_bytes(512));
     const auto packed = p("solo.sfc");
     ASSERT_EQ(sfc({"pack", src.string(), "-o", packed.string()}).exit_code, 0);

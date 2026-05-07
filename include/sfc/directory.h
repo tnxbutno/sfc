@@ -1,9 +1,9 @@
 #pragma once
 
 /// @file directory.h
-/// @brief Pure SFC/P5 Directory profile encode and extract (§16).
+/// @brief Pure directory profile encode and extract (P5, §16).
 ///
-/// Inner content layout for a P5 directory:
+/// Inner content layout for a directory file:
 ///   [0 .. manifest_size-1]  Manifest (MFST header + entries + BLAKE3)
 ///   [manifest_size ..]      File contents concatenated in manifest order
 ///
@@ -25,7 +25,7 @@ namespace sfc {
 // Data structures
 // ---------------------------------------------------------------------------
 
-/// One input file when building a P5 Directory.
+/// One input file when building a directory container.
 struct DirectoryInputFile {
     std::string           path;       ///< Relative path (UTF-8, '/' separated).
                                       ///< Must not start with '/', contain '\\',
@@ -34,7 +34,7 @@ struct DirectoryInputFile {
     uint16_t              format_id;  ///< Inner Format ID for this file.
 };
 
-/// One file extracted from a P5 Directory.
+/// One file extracted from a directory container.
 struct ExtractedFile {
     std::string           path;       ///< Relative path from the manifest.
     std::vector<uint8_t>  content;    ///< Extracted and verified file bytes.
@@ -52,7 +52,7 @@ struct DirectoryExtractResult {
 // Encoding
 // ---------------------------------------------------------------------------
 
-/// @brief Encode a set of files as an SFC/P5 Directory container.
+/// @brief Encode a set of files as a directory container (P5, §16).
 ///
 /// Steps:
 ///   1. Validate each path (no '..', '.', '\\', leading '/', control chars).
@@ -71,14 +71,14 @@ struct DirectoryExtractResult {
 [[nodiscard]] Result<std::vector<uint8_t>>
 encode_directory(std::vector<DirectoryInputFile> files, EncodeParams params);
 
-/// @brief Encode a set of files as an SFC/P5 Directory split across N P2 segments.
+/// @brief Encode a set of files as a directory split across N carrier segments (P5+P2, §16).
 ///
 /// Identical to encode_directory but calls encode_split instead of encode,
 /// distributing chunks across num_segments output buffers.
 ///
 /// @param files        Input files (same constraints as encode_directory).
 /// @param params       Base encode parameters.
-/// @param num_segments Number of P2 output segments (≥ 1, capped at N+M).
+/// @param num_segments Number of carrier segments (≥ 1, capped at N+M).
 /// @return Vector of num_segments byte buffers, or SfcError.
 [[nodiscard]] Result<std::vector<std::vector<uint8_t>>>
 encode_directory_split(std::vector<DirectoryInputFile> files,

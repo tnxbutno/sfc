@@ -44,7 +44,7 @@ void setup_pack(CLI::App& app) {
         ->required()->type_name("PATH");
     cmd->add_option("-o,--output", opts->output,
                     "Output .sfc path (default: <input>.sfc; for -n>1: base for segments)");
-    cmd->add_option("-n,--segments",   opts->segments,   "Split into N P2 segments (default: 1)")
+    cmd->add_option("-n,--segments",   opts->segments,   "Split into N carrier segments (default: 1)")
         ->check(CLI::PositiveNumber);
     cmd->add_option("-m,--recovery",   opts->recovery,   "Recovery chunks M (default: 0)");
     cmd->add_option("-s,--chunk-size", opts->chunk_size, "Chunk size bytes — must be even (default: 65536)")

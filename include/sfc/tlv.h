@@ -42,8 +42,8 @@ serialize_tlv_fields(const std::vector<TlvField>& fields);
 
 /// @brief Known TLV tag values.
 namespace TlvTag {
-    inline constexpr uint16_t kChunkOffsetIndex = 0x0020; ///< SFC/P3 (uint64[])
-    inline constexpr uint16_t kOriginalFormatId = 0x0030; ///< SFC/P4 (uint16 LE)
+    inline constexpr uint16_t kChunkOffsetIndex = 0x0020; ///< HTTP delivery profile (P3, §14): chunk byte offsets (uint64[])
+    inline constexpr uint16_t kOriginalFormatId = 0x0030; ///< preprocessing profile (P4, §15): original format ID (uint16 LE)
 
     // Metadata tags (§3.2): UTF-8 strings, max 4096 bytes each.
     inline constexpr uint16_t kAuthor      = 0x0100; ///< Author name

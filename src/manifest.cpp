@@ -1,5 +1,5 @@
 /// @file manifest.cpp
-/// @brief SFC/P5 Manifest parse/serialize.
+/// @brief Directory Manifest parse/serialize (P5, §16).
 
 #include "sfc/manifest.h"
 #include "sfc/blake3_hash.h"

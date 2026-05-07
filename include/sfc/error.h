@@ -46,7 +46,7 @@ enum class ErrorCode : uint32_t {
     MissingGlobalHeader             = 1028,
     FieldBelowMinimum               = 1029,
     FieldAboveMaximum               = 1030,
-    SplitTransportWithoutP2         = 1031,
+    SplitTransportWithoutSplitProfile = 1031,
     NonZeroErasureAlgoWithMZero     = 1032,
 
     // --- Chunk-level errors (decoder SHOULD discard chunk, continue) ---
@@ -68,7 +68,7 @@ enum class ErrorCode : uint32_t {
     EmptyInnerFilename              = 3004,
     NonZeroAfterFilenameNull        = 3005,
     ProfileMustViolation            = 3006,
-    P2AndP3BothSet                  = 3007,
+    SplitAndHttpProfilesBothSet     = 3007,
     CaseCollisionInManifest         = 3008,
     PerFileBlake3Mismatch           = 3009,
     PriorityCountExceedsN           = 3010,

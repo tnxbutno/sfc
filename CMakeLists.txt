@@ -202,8 +202,8 @@ add_executable(sfc_tests
     tests/test_phase6.cpp
     tests/test_phase7.cpp
     tests/test_phase8_9.cpp
-    tests/test_p2.cpp
-    tests/test_p5.cpp
+    tests/test_split.cpp
+    tests/test_directory.cpp
     tests/test_metadata.cpp
 )
 

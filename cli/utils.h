@@ -219,11 +219,11 @@ inline std::string_view compression_algo_name(uint8_t algo) {
 
 inline std::string profile_name(uint16_t flags) {
     using F = sfc::FlagBit;
-    if (flags & (1u << static_cast<uint16_t>(F::P2Split)))    return "P2/split";
-    if (flags & (1u << static_cast<uint16_t>(F::P5Directory))) return "P5/directory";
-    if (flags & (1u << static_cast<uint16_t>(F::P1Image)))    return "P1/image";
-    if (flags & (1u << static_cast<uint16_t>(F::P3Http)))     return "P3/http";
-    if (flags & (1u << static_cast<uint16_t>(F::P4Preprocess))) return "P4/preprocess";
+    if (flags & (1u << static_cast<uint16_t>(F::SplitProfile)))     return "split transport";
+    if (flags & (1u << static_cast<uint16_t>(F::DirectoryProfile))) return "directory";
+    if (flags & (1u << static_cast<uint16_t>(F::ImageProfile)))     return "image";
+    if (flags & (1u << static_cast<uint16_t>(F::HttpProfile)))      return "http delivery";
+    if (flags & (1u << static_cast<uint16_t>(F::PreprocessProfile))) return "preprocessed";
     return "regular";
 }
 
@@ -253,21 +253,21 @@ parse_header_from_file(std::span<const uint8_t> data) {
     return sfc::parse_global_header(data.subspan(8, static_cast<size_t>(h + 4)));
 }
 
-/// Returns true if the file has the SPLIT_TRANSPORT flag set (P2 segment).
-inline bool is_p2_segment(std::span<const uint8_t> data) {
+/// Returns true if the file has the SPLIT_TRANSPORT flag set (split-transport segment).
+inline bool is_split_segment(std::span<const uint8_t> data) {
     auto hdr = parse_header_from_file(data);
     if (!hdr) return false;
     return (hdr->flags & (1u << static_cast<uint16_t>(sfc::FlagBit::SplitTransport))) != 0;
 }
 
-/// Returns true if the file has the P5Directory flag set.
-inline bool is_p5_directory(std::span<const uint8_t> data) {
+/// Returns true if the file has the directory profile flag set.
+inline bool is_directory(std::span<const uint8_t> data) {
     auto hdr = parse_header_from_file(data);
     if (!hdr) return false;
-    return (hdr->flags & (1u << static_cast<uint16_t>(sfc::FlagBit::P5Directory))) != 0;
+    return (hdr->flags & (1u << static_cast<uint16_t>(sfc::FlagBit::DirectoryProfile))) != 0;
 }
 
-/// Attempt to parse a P2 SegmentHeader from a file (only valid if is_p2_segment).
+/// Attempt to parse a Segment Header from a file (only valid if is_split_segment).
 inline std::optional<sfc::SegmentHeader>
 parse_segment_hdr_from_file(std::span<const uint8_t> data) {
     if (data.size() < 12) return std::nullopt;
@@ -281,7 +281,7 @@ parse_segment_hdr_from_file(std::span<const uint8_t> data) {
 }
 
 // ---------------------------------------------------------------------------
-// P2 segment auto-discovery
+// Split-transport segment auto-discovery
 // ---------------------------------------------------------------------------
 
 /// Read exactly N bytes from a file into a fixed-size array.
@@ -307,19 +307,19 @@ inline bool uuid_from_head(const std::array<uint8_t, 28>& head,
     return true;
 }
 
-/// Given the path to a single .sfc file, return the full list of P2 siblings
-/// sharing its UUID found in the same directory.  If the file is not a P2
-/// segment, or no siblings exist, returns a one-element vector with the
-/// original path unchanged.
+/// Given the path to a single .sfc file, return the full list of split-transport
+/// siblings sharing its UUID found in the same directory.  If the file is not a
+/// split-transport segment, or no siblings exist, returns a one-element vector
+/// with the original path unchanged.
 ///
 /// Candidate files are identified by reading only the first 28 bytes
 /// (§13.3 Step 2 — MUST NOT read full file contents during scan).
 inline std::vector<std::string>
-discover_p2_siblings(const std::string& path) {
+discover_split_siblings(const std::string& path) {
     std::vector<uint8_t> data;
     try { data = read_file(path); } catch (...) { return {path}; }
 
-    if (!is_p2_segment(data)) return {path};
+    if (!is_split_segment(data)) return {path};
 
     auto hdr = parse_header_from_file(data);
     if (!hdr) return {path};

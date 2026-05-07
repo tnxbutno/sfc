@@ -23,13 +23,13 @@ void setup_verify(CLI::App& app) {
     struct Opts { std::vector<std::string> inputs; };
     auto opts = std::make_shared<Opts>();
 
-    cmd->add_option("inputs", opts->inputs, "One or more .sfc files or P2 segments")
+    cmd->add_option("inputs", opts->inputs, "One or more .sfc files or split-transport segments")
         ->required()->type_name("FILE...");
 
     cmd->callback([opts] {
-        // ── Auto-discover P2 siblings when only one file is given ─────────
+        // ── Auto-discover split-transport siblings when only one file is given ──
         if (opts->inputs.size() == 1) {
-            auto siblings = cli::discover_p2_siblings(opts->inputs[0]);
+            auto siblings = cli::discover_split_siblings(opts->inputs[0]);
             if (siblings.size() > 1) {
                 std::println(stderr, "sfc verify: discovered {} segments for {}",
                              siblings.size(), opts->inputs[0]);

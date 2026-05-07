@@ -29,15 +29,15 @@ void setup_repair(CLI::App& app) {
     };
     auto opts = std::make_shared<Opts>();
 
-    cmd->add_option("inputs", opts->inputs, "One or more .sfc files or P2 segments")
+    cmd->add_option("inputs", opts->inputs, "One or more .sfc files or split-transport segments")
         ->required()->type_name("FILE...");
     cmd->add_option("-o,--output", opts->output,
         "Output file or directory (default: current working directory)");
 
     cmd->callback([opts] {
-        // ── Auto-discover P2 siblings when only one file is given ─────────
+        // ── Auto-discover split-transport siblings when only one file is given ──
         if (opts->inputs.size() == 1) {
-            auto siblings = cli::discover_p2_siblings(opts->inputs[0]);
+            auto siblings = cli::discover_split_siblings(opts->inputs[0]);
             if (siblings.size() > 1) {
                 std::println(stderr, "sfc repair: discovered {} segments for {}",
                              siblings.size(), opts->inputs[0]);
@@ -109,12 +109,12 @@ void setup_repair(CLI::App& app) {
                 }
             }
 
-            // ── Detect P5 ─────────────────────────────────────────────────
+            // ── Detect directory profile ───────────────────────────────────
             const bool p5 = [&] {
                 auto it = hdr_map.find(entry.uuid);
                 if (it == hdr_map.end()) return false;
                 return (it->second.flags &
-                        (1u << static_cast<uint16_t>(sfc::FlagBit::P5Directory))) != 0;
+                        (1u << static_cast<uint16_t>(sfc::FlagBit::DirectoryProfile))) != 0;
             }();
 
             // ── Write output ──────────────────────────────────────────────
@@ -123,7 +123,7 @@ void setup_repair(CLI::App& app) {
                     auto dir = sfc::extract_directory_full(
                         std::span{entry.result.content});
                     if (!dir) {
-                        std::println(stderr, "{}: P5 extraction failed: {}",
+                        std::println(stderr, "{}: directory extraction failed: {}",
                                      label, dir.error().detail);
                         if (worst < 2) worst = 2;
                     } else {

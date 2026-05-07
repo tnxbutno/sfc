@@ -1,10 +1,10 @@
 #pragma once
 
 /// @file split_decoder.h
-/// @brief Pure SFC/P2 Split Transport decoder (§13).
+/// @brief Pure split transport decoder (P2, §13).
 ///
-/// decode_split merges chunks from multiple segments and runs the standard
-/// decode pipeline.  decode_multi auto-groups files by UUID.
+/// decode_split merges chunks from multiple carrier segments and runs the
+/// standard decode pipeline.  decode_multi auto-groups files by UUID.
 
 #include "sfc/decoder.h"
 #include "sfc/error.h"
@@ -17,7 +17,7 @@
 
 namespace sfc {
 
-/// @brief Decode a set of P2 Split Transport segments.
+/// @brief Decode a set of split-transport carrier segments.
 ///
 /// For each segment the function:
 ///   1. Parses the preamble, Global Header Region, and 16-byte Segment Header.
@@ -48,7 +48,7 @@ struct MultiDecodeEntry {
     ReassemblyResult result;  ///< Reassembly result for this UUID.
 };
 
-/// @brief Decode a heterogeneous collection of SFC files and/or P2 segments.
+/// @brief Decode a heterogeneous collection of SFC files and/or split-transport segments.
 ///
 /// Algorithm:
 ///   1. Read the UUID (at fixed file offset 12) and the flags field from each file.
@@ -56,7 +56,7 @@ struct MultiDecodeEntry {
 ///   3. Files with SPLIT_TRANSPORT set are grouped by UUID and decoded together
 ///      via decode_split().
 ///
-/// @param files Raw byte buffers, one per SFC file or P2 segment.
+/// @param files Raw byte buffers, one per SFC file or split-transport segment.
 /// @return Vector of per-UUID decode results, or SfcError on first fatal failure.
 [[nodiscard]] Result<std::vector<MultiDecodeEntry>>
 decode_multi(std::span<const std::vector<uint8_t>> files);

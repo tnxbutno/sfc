@@ -28,15 +28,15 @@ void setup_unpack(CLI::App& app) {
     };
     auto opts = std::make_shared<Opts>();
 
-    cmd->add_option("inputs", opts->inputs, "One or more .sfc files or P2 segments")
+    cmd->add_option("inputs", opts->inputs, "One or more .sfc files or split-transport segments")
         ->required()->type_name("FILE...");
     cmd->add_option("-o,--output", opts->output,
         "Output file or directory (default: stdout for files, cwd for directories)");
 
     cmd->callback([opts] {
-        // ── Auto-discover P2 siblings when only one file is given ─────────
+        // ── Auto-discover split-transport siblings when only one file is given ──
         if (opts->inputs.size() == 1) {
-            auto siblings = cli::discover_p2_siblings(opts->inputs[0]);
+            auto siblings = cli::discover_split_siblings(opts->inputs[0]);
             if (siblings.size() > 1) {
                 std::println(stderr, "sfc unpack: discovered {} segments for {}",
                              siblings.size(), opts->inputs[0]);
@@ -82,16 +82,16 @@ void setup_unpack(CLI::App& app) {
                 std::exit(1);
             }
 
-            // ── Detect P5 ─────────────────────────────────────────────────
-            const bool p5 = [&] {
+            // ── Detect directory profile ───────────────────────────────────
+            const bool is_directory_profile = [&] {
                 auto it = hdr_map.find(entry.uuid);
                 if (it == hdr_map.end()) return false;
                 return (it->second.flags &
-                        (1u << static_cast<uint16_t>(sfc::FlagBit::P5Directory))) != 0;
+                        (1u << static_cast<uint16_t>(sfc::FlagBit::DirectoryProfile))) != 0;
             }();
 
-            if (p5) {
-                // ── P5 directory ──────────────────────────────────────────
+            if (is_directory_profile) {
+                // ── Directory: extract all files ───────────────────────────
                 auto dir = sfc::extract_directory_full(
                     std::span{entry.result.content});
                 if (!dir) {

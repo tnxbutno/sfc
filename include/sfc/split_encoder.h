@@ -1,9 +1,9 @@
 #pragma once
 
 /// @file split_encoder.h
-/// @brief Pure SFC/P2 Split Transport encoder (§13).
+/// @brief Pure split transport encoder (P2, §13).
 ///
-/// encode_split distributes an SFC file's chunks across multiple P2 segments.
+/// encode_split distributes an SFC file's chunks across multiple carrier segments.
 /// Each segment shares the same byte-identical Global Header Region.
 /// Only the last (terminal) segment carries the 64-byte Trailer.
 
@@ -16,7 +16,7 @@
 
 namespace sfc {
 
-/// @brief Encode content into a sequence of P2 Split Transport segments.
+/// @brief Encode content into a sequence of split-transport carrier segments.
 ///
 /// Performs the full encoding pipeline (compress + RS recovery), then
 /// distributes the N+M chunks as evenly as possible across num_segments
@@ -27,7 +27,7 @@ namespace sfc {
 ///   Chunks assigned to this segment
 ///   64-byte Trailer (only in the last / terminal segment)
 ///
-/// The GlobalHeader flags include SPLIT_TRANSPORT (bit 0) and P2Split (bit 5).
+/// Sets SPLIT_TRANSPORT (bit 0) and the split transport profile flag (P2, bit 5).
 /// num_segments is capped internally at N+M so that every segment has ≥1 chunk.
 ///
 /// @param content      Inner content bytes to encode.

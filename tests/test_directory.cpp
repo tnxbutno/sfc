@@ -1,5 +1,5 @@
-/// @file test_p5.cpp
-/// @brief Tests for SFC/P5 Directory profile: encode_directory, extract_directory_full,
+/// @file test_directory.cpp
+/// @brief Tests for directory profile (P5, §16): encode_directory, extract_directory_full,
 ///        extract_directory_partial.
 
 #include "sfc/directory.h"

@@ -1,5 +1,5 @@
 /// @file split_encoder.cpp
-/// @brief SFC/P2 Split Transport encoder.
+/// @brief Split transport encoder (P2, §13).
 ///
 /// Pipeline (mirrors encoder.cpp, then distributes instead of monolithic assembly):
 ///   1. Validate params.
@@ -35,7 +35,7 @@ namespace sfc {
 // Internal helpers (file-local)
 // ---------------------------------------------------------------------------
 
-/// Compute the SFC/P1 priority list per §12.4 (mirrors encoder.cpp).
+/// Compute the image profile (P1) priority list per §12.4 (mirrors encoder.cpp).
 static Result<std::vector<uint32_t>>
 resolve_p1_priority(uint16_t format_id, uint32_t n,
                     const std::vector<uint32_t>& override_list, bool p1_flag) {
@@ -46,7 +46,7 @@ resolve_p1_priority(uint16_t format_id, uint32_t n,
     if (fid == InnerFormatId::Jpeg2000 || fid == InnerFormatId::JpegXl) {
         return std::unexpected(SfcError{
             ErrorCode::ProfileMustViolation,
-            "SFC/P1 Class P format (JPEG 2000/XL): priority_list must be provided (§12.4)"
+            "image profile (P1) Class P format (JPEG 2000/XL): priority_list must be provided (§12.4)"
         });
     }
     if (fid == InnerFormatId::JpegBaseline) {
@@ -160,7 +160,7 @@ encode_split(std::span<const uint8_t> content,
         }
     }
 
-    // --- Step 5: build GlobalHeader with P2 flags ---
+    // --- Step 5: build GlobalHeader with split transport flags (P2, §13) ---
     GlobalHeader ghdr{};
     ghdr.uuid             = params.uuid;
     ghdr.inner_file_size  = inner_size;
@@ -170,14 +170,14 @@ encode_split(std::span<const uint8_t> content,
     ghdr.s                = params.s;
     ghdr.erasure_algo     = erasure_algo;
     ghdr.compression_algo = comp_algo;
-    // P2 requires SPLIT_TRANSPORT (bit 0) and P2Split (bit 5).
-    // Preserve any profile flags already in params (e.g. P5Directory).
+    // Split transport sets SPLIT_TRANSPORT (bit 0) and the split profile flag (P2, bit 5).
+    // Preserve any profile flags already in params (e.g. DirectoryProfile).
     ghdr.flags = params.flags |
                  (1u << static_cast<uint16_t>(FlagBit::SplitTransport)) |
-                 (1u << static_cast<uint16_t>(FlagBit::P2Split));
+                 (1u << static_cast<uint16_t>(FlagBit::SplitProfile));
 
     // Priority list per §12.4.
-    const bool p1_flag = (params.flags & (1u << static_cast<uint16_t>(FlagBit::P1Image))) != 0;
+    const bool p1_flag = (params.flags & (1u << static_cast<uint16_t>(FlagBit::ImageProfile))) != 0;
     auto prio_res = resolve_p1_priority(params.format_id, n, params.priority_list, p1_flag);
     if (!prio_res) return std::unexpected(prio_res.error());
     ghdr.priority_list  = std::move(*prio_res);
