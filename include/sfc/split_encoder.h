@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file split_encoder.h
-/// @brief Pure split transport encoder (P2, §13).
+/// @brief Pure split transport encoder (P2, Section 13).
 ///
 /// encode_split distributes an SFC file's chunks across multiple carrier segments.
 /// Each segment shares the same byte-identical Global Header Region.
@@ -28,11 +28,11 @@ namespace sfc {
 ///   64-byte Trailer (only in the last / terminal segment)
 ///
 /// Sets SPLIT_TRANSPORT (bit 0) and the split transport profile flag (P2, bit 5).
-/// num_segments is capped internally at N+M so that every segment has ≥1 chunk.
+/// num_segments is capped internally at N+M so that every segment has >=1 chunk.
 ///
 /// @param content      Inner content bytes to encode.
 /// @param params       Encoding parameters (same fields as encode()).
-/// @param num_segments Requested number of output segments (must be ≥ 1).
+/// @param num_segments Requested number of output segments (must be >= 1).
 /// @return Vector of num_segments byte buffers, or SfcError on failure.
 [[nodiscard]] Result<std::vector<std::vector<uint8_t>>>
 encode_split(std::span<const uint8_t> content,

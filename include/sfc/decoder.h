@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file decoder.h
-/// @brief Pure SFC decoder — parses a .sfc file and reassembles the content (§9).
+/// @brief Pure SFC decoder - parses a .sfc file and reassembles the content (Section 9).
 ///
 /// All functions are pure (no I/O).
 
@@ -23,10 +23,10 @@ namespace sfc {
 ///   D4: per-chunk working set promotion (UUID, index, algo)
 ///   D5: decompression + RS reconstruction + global hash
 ///
-/// Applies duplicate handling (§9.5) before reconstruction.
-/// If V >= N and Trailer is verified → full reassembly (§9.1).
-/// If V >= N and Trailer absent     → unverified reconstruction (§9.2).
-/// If V < N                         → partial reassembly (§9.3).
+/// Applies duplicate handling (Section 9.5) before reconstruction.
+/// If V >= N and Trailer is verified -> full reassembly (Section 9.1).
+/// If V >= N and Trailer absent     -> unverified reconstruction (Section 9.2).
+/// If V < N                         -> partial reassembly (Section 9.3).
 ///
 /// @param file_bytes Complete bytes of a .sfc file.
 /// @return ReassemblyResult on success, or SfcError on fatal error.

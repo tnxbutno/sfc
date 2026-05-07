@@ -1,5 +1,5 @@
 /// @file test_metadata.cpp
-/// @brief Tests for metadata TLV fields (tags 0x0100–0x0104): encode, decode, round-trip.
+/// @brief Tests for metadata TLV fields (tags 0x0100-0x0104): encode, decode, round-trip.
 
 #include "sfc/decoder.h"
 #include "sfc/encoder.h"
@@ -37,7 +37,7 @@ static std::vector<uint8_t> small_content() {
 }
 
 // ===========================================================================
-// Round-trip: metadata survives encode → decode
+// Round-trip: metadata survives encode -> decode
 // ===========================================================================
 
 TEST(Metadata, RoundTrip_AllFields) {
@@ -109,7 +109,7 @@ TEST(Metadata, RoundTrip_UnicodeLocation) {
 }
 
 TEST(Metadata, RoundTrip_MaxLengthString) {
-    // Exactly at the 4096-byte limit — must succeed.
+    // Exactly at the 4096-byte limit - must succeed.
     std::string big(4096, 'x');
     FileMetadata meta{ .comment = big };
 
@@ -136,7 +136,7 @@ TEST(Metadata, TooLong_ReturnsError) {
 }
 
 // ===========================================================================
-// TLV tag ordering — metadata tags must be in ascending order in wire format
+// TLV tag ordering - metadata tags must be in ascending order in wire format
 // ===========================================================================
 
 TEST(Metadata, WireFormat_TagsAscending) {

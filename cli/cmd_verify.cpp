@@ -1,5 +1,5 @@
 /// @file cmd_verify.cpp
-/// @brief `sfc verify` — validate integrity without extracting content.
+/// @brief `sfc verify` - validate integrity without extracting content.
 ///
 /// Exit codes:  0 = fully OK   2 = degraded (partial)   1 = unrecoverable
 
@@ -27,7 +27,7 @@ void setup_verify(CLI::App& app) {
         ->required()->type_name("FILE...");
 
     cmd->callback([opts] {
-        // ── Auto-discover split-transport siblings when only one file is given ──
+        // -- Auto-discover split-transport siblings when only one file is given --
         if (opts->inputs.size() == 1) {
             auto siblings = cli::discover_split_siblings(opts->inputs[0]);
             if (siblings.size() > 1) {
@@ -48,7 +48,7 @@ void setup_verify(CLI::App& app) {
             }
         }
 
-        // Build UUID → first filename map for display labels.
+        // Build UUID -> first filename map for display labels.
         std::unordered_map<sfc::FileUuid, std::string> uuid_label;
         for (size_t i = 0; i < file_data.size(); ++i) {
             auto hdr = cli::parse_header_from_file(file_data[i]);

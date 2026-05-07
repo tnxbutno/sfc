@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file global_header.h
-/// @brief Pure parse/serialize/validate for the SFC Global Header (§3.2).
+/// @brief Pure parse/serialize/validate for the SFC Global Header (Section 3.2).
 ///
 /// Layout (immediately after 8-byte preamble):
 ///   [0]  4    Header length H (LE uint32; H+4 = total global header region)
@@ -10,9 +10,9 @@
 ///   [28] 2    Inner Format ID (LE uint16)
 ///   [30] 255  Inner filename (null-padded UTF-8)
 ///   [285]32   Global file BLAKE3 hash
-///   [317]4    N — data chunk count (LE uint32)
-///   [321]4    M — recovery chunk count (LE uint32)
-///   [325]4    S — nominal chunk size (LE uint32)
+///   [317]4    N - data chunk count (LE uint32)
+///   [321]4    M - recovery chunk count (LE uint32)
+///   [325]4    S - nominal chunk size (LE uint32)
 ///   [329]1    Erasure algorithm ID
 ///   [330]1    Compression algorithm ID
 ///   [331]2    Flags (LE uint16)
@@ -51,7 +51,7 @@ struct GlobalHeader {
     uint8_t  erasure_algo;               ///< Erasure coding algorithm ID.
     uint8_t  compression_algo;           ///< Compression algorithm ID.
     uint16_t flags;                      ///< Profile and flags bitfield.
-    uint16_t priority_count;             ///< P — number of priority chunks.
+    uint16_t priority_count;             ///< P - number of priority chunks.
     std::vector<uint32_t> priority_list; ///< Priority chunk indices [0..P-1].
     std::vector<TlvField> tlv_fields;    ///< Extension TLV fields.
 };
@@ -69,16 +69,16 @@ parse_global_header(std::span<const uint8_t> data);
 /// @brief Serialize a GlobalHeader to bytes.
 ///
 /// Returns the Global Header Region (H+4 bytes). Does NOT include the 8-byte preamble.
-/// Fails with HeaderLengthOutOfBounds if the computed H exceeds 65,536 bytes (§4.5 rule g).
+/// Fails with HeaderLengthOutOfBounds if the computed H exceeds 65,536 bytes (Section 4.5 rule g).
 ///
 /// @param hdr GlobalHeader to serialize.
 /// @return Serialized bytes or error.
 [[nodiscard]] Result<std::vector<uint8_t>>
 serialize_global_header(const GlobalHeader& hdr);
 
-/// @brief Validate a parsed GlobalHeader against protocol limits (§18.3).
+/// @brief Validate a parsed GlobalHeader against protocol limits (Section 18.3).
 ///
-/// Checks: N,M,S within limits; S even; N+M ≤ 65535; priority list valid;
+/// Checks: N,M,S within limits; S even; N+M <= 65535; priority list valid;
 /// erasure 0x00 with M>0; inner_file_size==0 with N!=1.
 ///
 /// @param hdr Parsed header.

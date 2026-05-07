@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file chunk.h
-/// @brief Pure parse/serialize for SFC chunk structures (§5).
+/// @brief Pure parse/serialize for SFC chunk structures (Section 5).
 ///
 /// Physical layout of one chunk:
 ///   48 bytes  ChunkHeader
@@ -19,10 +19,10 @@
 namespace sfc {
 
 // ---------------------------------------------------------------------------
-// ChunkHeader — 48 bytes fixed
+// ChunkHeader - 48 bytes fixed
 // ---------------------------------------------------------------------------
 
-/// Parsed chunk header (48 bytes, §5.1).
+/// Parsed chunk header (48 bytes, Section 5.1).
 struct ChunkHeader {
     FileUuid uuid;                  ///< 16-byte File UUID.
     uint32_t chunk_index;           ///< Position index (0-based).
@@ -46,7 +46,7 @@ parse_chunk_header(std::span<const uint8_t, 48> data);
 serialize_chunk_header(const ChunkHeader& hdr);
 
 // ---------------------------------------------------------------------------
-// ChunkTrailer — 36 bytes fixed
+// ChunkTrailer - 36 bytes fixed
 // ---------------------------------------------------------------------------
 
 /// @brief Parse the 36-byte chunk trailer.
@@ -65,7 +65,7 @@ parse_chunk_trailer(std::span<const uint8_t, 36> data);
 serialize_chunk_trailer(const Blake3Digest& hash);
 
 // ---------------------------------------------------------------------------
-// ParsedChunk — complete parsed chunk
+// ParsedChunk - complete parsed chunk
 // ---------------------------------------------------------------------------
 
 /// A fully parsed chunk (header + compressed payload + verified hash).
@@ -78,7 +78,7 @@ struct ParsedChunk {
 /// @brief Parse one complete chunk from a byte span.
 ///
 /// Reads header (48), payload (header.compressed_payload_len), trailer (36).
-/// Does NOT verify the BLAKE3 hash — caller must call blake3_verify_concat.
+/// Does NOT verify the BLAKE3 hash - caller must call blake3_verify_concat.
 ///
 /// @param data Byte span starting at the first "CHK\0" magic byte.
 /// @return {ParsedChunk, bytes_consumed} on success.

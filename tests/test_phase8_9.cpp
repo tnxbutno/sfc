@@ -1,7 +1,7 @@
 /// @file test_phase8_9.cpp
 /// @brief Integration tests for Phase 8 (encoder) and Phase 9 (decoder).
 ///
-/// These tests exercise the full encode → decode round-trip and verify that:
+/// These tests exercise the full encode -> decode round-trip and verify that:
 ///   - Content is reassembled exactly.
 ///   - ReassemblyStatus reflects the correct verification level.
 ///   - Various content sizes and compression algorithms work correctly.
@@ -46,7 +46,7 @@ static EncodeParams make_params(CompressionAlgo algo = CompressionAlgo::Identity
 }
 
 // ===========================================================================
-// Phase 8: encode — basic parameter validation
+// Phase 8: encode - basic parameter validation
 // ===========================================================================
 
 TEST(Encode, OddS_Error) {
@@ -86,7 +86,7 @@ TEST(Encode, ProducesNonEmptyBytes) {
 }
 
 // ===========================================================================
-// Phase 8+9: round-trip — identity compression
+// Phase 8+9: round-trip - identity compression
 // ===========================================================================
 
 TEST(EncodeDecode, RoundTrip_Identity_SmallContent) {
@@ -105,7 +105,7 @@ TEST(EncodeDecode, RoundTrip_Identity_SmallContent) {
 }
 
 TEST(EncodeDecode, RoundTrip_Identity_EmptyContent) {
-    // Empty inner content: N=1 by spec exception (§10.1).
+    // Empty inner content: N=1 by spec exception (Section 10.1).
     auto p = make_params(CompressionAlgo::Identity, 64);
     std::vector<uint8_t> content;
 
@@ -120,7 +120,7 @@ TEST(EncodeDecode, RoundTrip_Identity_EmptyContent) {
 }
 
 TEST(EncodeDecode, RoundTrip_Identity_ExactlyS) {
-    // Content size == S → one full block, no zero-padding needed.
+    // Content size == S -> one full block, no zero-padding needed.
     const uint32_t s = 64;
     auto p           = make_params(CompressionAlgo::Identity, s);
     std::vector<uint8_t> content(s);
@@ -135,7 +135,7 @@ TEST(EncodeDecode, RoundTrip_Identity_ExactlyS) {
 }
 
 TEST(EncodeDecode, RoundTrip_Identity_MultiChunk) {
-    // 150 bytes with S=64 → N=3 chunks (64+64+22 padded to 64).
+    // 150 bytes with S=64 -> N=3 chunks (64+64+22 padded to 64).
     const uint32_t s = 64;
     auto p           = make_params(CompressionAlgo::Identity, s);
     std::vector<uint8_t> content(150);
@@ -163,7 +163,7 @@ TEST(EncodeDecode, RoundTrip_Identity_SingleByte) {
 }
 
 // ===========================================================================
-// Phase 8+9: round-trip — zstd compression
+// Phase 8+9: round-trip - zstd compression
 // ===========================================================================
 
 TEST(EncodeDecode, RoundTrip_Zstd_SmallContent) {
@@ -195,7 +195,7 @@ TEST(EncodeDecode, RoundTrip_Zstd_RandomishContent) {
 }
 
 // ===========================================================================
-// Phase 8+9: round-trip — RS recovery (M > 0)
+// Phase 8+9: round-trip - RS recovery (M > 0)
 // ===========================================================================
 
 /// Remove chunks at given 0-based byte-level positions from a raw SFC file.
@@ -222,7 +222,7 @@ static std::vector<uint8_t> drop_chunks(const std::vector<uint8_t>& sfc_bytes,
     out.insert(out.end(), sfc_bytes.begin(), sfc_bytes.begin() + chunk_start);
 
     size_t pos = chunk_start;
-    while (pos + 84 <= chunk_end) {  // 48 hdr + ≥0 payload + 36 trailer = min 84
+    while (pos + 84 <= chunk_end) {  // 48 hdr + >=0 payload + 36 trailer = min 84
         // Check magic "CHK\0".
         if (sfc_bytes[pos] != 0x43 || sfc_bytes[pos+1] != 0x48 ||
             sfc_bytes[pos+2] != 0x4B || sfc_bytes[pos+3] != 0x00) break;
@@ -259,7 +259,7 @@ static std::vector<uint8_t> drop_chunks(const std::vector<uint8_t>& sfc_bytes,
 }
 
 TEST(EncodeDecode, RoundTrip_RS_DropOneDataChunk) {
-    // N=2 data chunks, M=1 recovery → can tolerate loss of 1 chunk.
+    // N=2 data chunks, M=1 recovery -> can tolerate loss of 1 chunk.
     const uint32_t s = 64;
     EncodeParams p   = make_params(CompressionAlgo::Identity, s, /*m=*/1);
     p.uuid           = make_uuid(0x10);
@@ -270,7 +270,7 @@ TEST(EncodeDecode, RoundTrip_RS_DropOneDataChunk) {
     auto enc_res = encode(content, p);
     ASSERT_TRUE(enc_res.has_value()) << enc_res.error().detail;
 
-    // Drop data chunk 0 — RS should reconstruct it.
+    // Drop data chunk 0 - RS should reconstruct it.
     auto modified = drop_chunks(*enc_res, {0});
 
     auto dec_res = decode(modified);
@@ -279,7 +279,7 @@ TEST(EncodeDecode, RoundTrip_RS_DropOneDataChunk) {
 }
 
 TEST(EncodeDecode, RoundTrip_RS_DropRecoveryChunk) {
-    // N=2, M=1. Drop the recovery chunk — all data is present so no RS needed.
+    // N=2, M=1. Drop the recovery chunk - all data is present so no RS needed.
     const uint32_t s = 64;
     EncodeParams p   = make_params(CompressionAlgo::Identity, s, /*m=*/1);
     p.uuid           = make_uuid(0x20);
@@ -299,7 +299,7 @@ TEST(EncodeDecode, RoundTrip_RS_DropRecoveryChunk) {
 }
 
 // ===========================================================================
-// Phase 9: decode — error cases
+// Phase 9: decode - error cases
 // ===========================================================================
 
 TEST(Decode, TooSmall_Error) {
@@ -310,7 +310,7 @@ TEST(Decode, TooSmall_Error) {
 }
 
 TEST(Decode, BadMagic_Error) {
-    std::vector<uint8_t> bad(64, 0x00);  // 64 zero bytes — wrong magic
+    std::vector<uint8_t> bad(64, 0x00);  // 64 zero bytes - wrong magic
     auto res = decode(bad);
     ASSERT_FALSE(res.has_value());
     EXPECT_EQ(res.error().code, ErrorCode::InvalidMagic);
@@ -321,12 +321,12 @@ TEST(Decode, TruncatedAfterPreamble_Error) {
     std::vector<uint8_t> buf = {0x53, 0x46, 0x43, 0x00, 0x00, 0x00, 0x01, 0x00};
     auto res = decode(buf);
     ASSERT_FALSE(res.has_value());
-    // Too small to read H → HeaderLengthOutOfBounds.
+    // Too small to read H -> HeaderLengthOutOfBounds.
     EXPECT_EQ(res.error().code, ErrorCode::HeaderLengthOutOfBounds);
 }
 
 TEST(Decode, AllChunksPresent_ZstdAlgo) {
-    // Encode with zstd, then decode — verifies the full zstd path.
+    // Encode with zstd, then decode - verifies the full zstd path.
     auto p = make_params(CompressionAlgo::Zstd, 64);
     p.uuid = make_uuid(0x30);
     std::vector<uint8_t> content(128, 0xCC);
@@ -342,9 +342,9 @@ TEST(Decode, AllChunksPresent_ZstdAlgo) {
 
 TEST(Decode, compute_n_Basic) {
     // encode/decode implicitly tests compute_n; verify it directly here too.
-    EXPECT_EQ(compute_n(0,   64),  1u);   // empty content → 1 chunk
-    EXPECT_EQ(compute_n(64,  64),  1u);   // exactly S → 1 chunk
-    EXPECT_EQ(compute_n(65,  64),  2u);   // one byte over → 2 chunks
+    EXPECT_EQ(compute_n(0,   64),  1u);   // empty content -> 1 chunk
+    EXPECT_EQ(compute_n(64,  64),  1u);   // exactly S -> 1 chunk
+    EXPECT_EQ(compute_n(65,  64),  2u);   // one byte over -> 2 chunks
     EXPECT_EQ(compute_n(128, 64),  2u);
     EXPECT_EQ(compute_n(129, 64),  3u);
     EXPECT_EQ(compute_n(1,   2),   1u);

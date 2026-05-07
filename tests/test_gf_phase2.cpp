@@ -1,7 +1,7 @@
 /// @file test_gf_phase2.cpp
 /// @brief Unit tests for Phase 2: GF(2^16) arithmetic, matrix ops, Reed-Solomon.
 ///
-/// Conformance vectors from SFC spec §6.4:
+/// Conformance vectors from SFC spec Section 6.4:
 ///   gf_inv(2) = 0x8016
 ///   gf_inv(3) = 0xFFE4
 ///   Worked example: N=2, M=1, S=4
@@ -16,7 +16,7 @@ using namespace sfc;
 using namespace sfc::gf;
 
 // ===========================================================================
-// GF(2^16) arithmetic — gf_add
+// GF(2^16) arithmetic - gf_add
 // ===========================================================================
 
 TEST(GfArithmetic, Add_IsXor) {
@@ -35,7 +35,7 @@ TEST(GfArithmetic, Add_WithZero_IsIdentity) {
 }
 
 // ===========================================================================
-// GF(2^16) arithmetic — gf_mul
+// GF(2^16) arithmetic - gf_mul
 // ===========================================================================
 
 TEST(GfArithmetic, Mul_ByZero_IsZero) {
@@ -62,16 +62,16 @@ TEST(GfArithmetic, Mul_Associativity) {
 }
 
 // ===========================================================================
-// GF(2^16) arithmetic — gf_inv (spec conformance vectors)
+// GF(2^16) arithmetic - gf_inv (spec conformance vectors)
 // ===========================================================================
 
 TEST(GfArithmetic, Inv_SpecVector_2) {
-    // Spec §6.4: gf_inv(2) MUST equal 0x8016.
+    // Spec Section 6.4: gf_inv(2) MUST equal 0x8016.
     EXPECT_EQ(gf_inv(2), 0x8016);
 }
 
 TEST(GfArithmetic, Inv_SpecVector_3) {
-    // Spec §6.4: gf_inv(3) MUST equal 0xFFE4.
+    // Spec Section 6.4: gf_inv(3) MUST equal 0xFFE4.
     EXPECT_EQ(gf_inv(3), 0xFFE4);
 }
 
@@ -91,14 +91,14 @@ TEST(GfArithmetic, Inv_Zero_IsZero) {
     EXPECT_EQ(gf_inv(0), 0);
 }
 
-// Verify the intermediate values from the spec worked example §6.4:
+// Verify the intermediate values from the spec worked example Section 6.4:
 //   gf_mul(0x8016, 0x0002) = 0x0001  (since gf_inv(2)=0x8016)
 TEST(GfArithmetic, Mul_SpecExample_8016x2) {
     EXPECT_EQ(gf_mul(0x8016, 0x0002), 0x0001);
 }
 
 // ===========================================================================
-// GF(2^16) matrix — construction
+// GF(2^16) matrix - construction
 // ===========================================================================
 
 TEST(GfMatrix, ZeroMatrix) {
@@ -125,7 +125,7 @@ TEST(GfMatrix, MatGet_MatSet_RoundTrip) {
 }
 
 // ===========================================================================
-// GF(2^16) matrix — multiplication
+// GF(2^16) matrix - multiplication
 // ===========================================================================
 
 TEST(GfMatrix, Mul_ByIdentity_IsOriginal) {
@@ -147,12 +147,12 @@ TEST(GfMatrix, Mul_ByIdentity_IsOriginal) {
 }
 
 // ===========================================================================
-// GF(2^16) matrix — inversion
+// GF(2^16) matrix - inversion
 // ===========================================================================
 
 TEST(GfMatrix, Inv_ThenMul_IsIdentity) {
     // A * A^-1 should be identity for an invertible matrix.
-    // Use the 2×2 matrix from the spec worked example:
+    // Use the 2x2 matrix from the spec worked example:
     //   A = [[1, 0], [1, 0x8016]]
     gf::GfMatrix A = make_zero_matrix(2, 2);
     A = mat_set(A, 0, 0, 1);
@@ -174,7 +174,7 @@ TEST(GfMatrix, Inv_ThenMul_IsIdentity) {
 }
 
 TEST(GfMatrix, Inv_SpecExample_Matrix) {
-    // Spec §6.4 worked example:
+    // Spec Section 6.4 worked example:
     // A_inv[1] = [2, 2]  (row 1 of the inverted matrix)
     gf::GfMatrix A = make_zero_matrix(2, 2);
     A = mat_set(A, 0, 0, 1);
@@ -204,11 +204,11 @@ TEST(GfMatrix, Inv_SingularMatrix_ReturnsError) {
 }
 
 // ===========================================================================
-// Reed-Solomon — block/word conversion
+// Reed-Solomon - block/word conversion
 // ===========================================================================
 
 TEST(ReedSolomon, BlockToWords_LittleEndian) {
-    // [0x01, 0x00, 0x02, 0x00] → [0x0001, 0x0002]
+    // [0x01, 0x00, 0x02, 0x00] -> [0x0001, 0x0002]
     std::vector<uint8_t> block = {0x01, 0x00, 0x02, 0x00};
     auto words = block_to_words(block);
     ASSERT_EQ(words.size(), 2u);
@@ -217,7 +217,7 @@ TEST(ReedSolomon, BlockToWords_LittleEndian) {
 }
 
 TEST(ReedSolomon, WordsToBlock_LittleEndian) {
-    // [0x0001, 0x0002] → [0x01, 0x00, 0x02, 0x00]
+    // [0x0001, 0x0002] -> [0x01, 0x00, 0x02, 0x00]
     std::vector<uint16_t> words = {0x0001, 0x0002};
     auto block = words_to_block(words);
     ASSERT_EQ(block.size(), 4u);
@@ -235,11 +235,11 @@ TEST(ReedSolomon, BlockWords_RoundTrip) {
 }
 
 // ===========================================================================
-// Reed-Solomon — Cauchy matrix conformance
+// Reed-Solomon - Cauchy matrix conformance
 // ===========================================================================
 
 TEST(ReedSolomon, CauchyMatrix_SpecExample_N2M1) {
-    // Spec §6.4: N=2, M=1
+    // Spec Section 6.4: N=2, M=1
     // C[0][0] = gf_inv(0 XOR (1+0)) = gf_inv(1) = 1
     // C[0][1] = gf_inv(0 XOR (1+1)) = gf_inv(2) = 0x8016
     auto C = build_cauchy_matrix(2, 1);
@@ -248,7 +248,7 @@ TEST(ReedSolomon, CauchyMatrix_SpecExample_N2M1) {
 }
 
 // ===========================================================================
-// Reed-Solomon — encoding (spec §6.4 worked example)
+// Reed-Solomon - encoding (spec Section 6.4 worked example)
 // ===========================================================================
 
 TEST(ReedSolomon, Encode_SpecWorkedExample) {
@@ -269,7 +269,7 @@ TEST(ReedSolomon, Encode_SpecWorkedExample) {
 }
 
 // ===========================================================================
-// Reed-Solomon — reconstruction (spec §6.4 worked example)
+// Reed-Solomon - reconstruction (spec Section 6.4 worked example)
 // ===========================================================================
 
 TEST(ReedSolomon, Reconstruct_SpecWorkedExample_LoseChunk1) {
@@ -293,7 +293,7 @@ TEST(ReedSolomon, Reconstruct_SpecWorkedExample_LoseChunk1) {
 }
 
 // ===========================================================================
-// Reed-Solomon — round-trip: encode then lose up to M chunks, reconstruct
+// Reed-Solomon - round-trip: encode then lose up to M chunks, reconstruct
 // ===========================================================================
 
 TEST(ReedSolomon, RoundTrip_N3M2_LoseAnyTwo) {

@@ -7,14 +7,14 @@
 
 #include "sfc/compression.h"
 
-// zstd — MUST support (0x01)
+// zstd - MUST support (0x01)
 #include <zstd.h>
 
-// brotli — SHOULD support (0x02)
+// brotli - SHOULD support (0x02)
 #include <brotli/decode.h>
 #include <brotli/encode.h>
 
-// lz4 — SHOULD support (0x03, LZ4 Frame format)
+// lz4 - SHOULD support (0x03, LZ4 Frame format)
 #include <lz4frame.h>
 
 #include <format>
@@ -30,7 +30,7 @@ namespace sfc {
 // Identity (0x00)
 // ---------------------------------------------------------------------------
 
-/// Copy bytes unchanged — no compression.
+/// Copy bytes unchanged - no compression.
 static Result<std::vector<uint8_t>> identity_compress(std::span<const uint8_t> data) {
     return std::vector<uint8_t>(data.begin(), data.end());
 }
@@ -161,7 +161,7 @@ static Result<std::vector<uint8_t>> brotli_compress_impl(std::span<const uint8_t
 static Result<std::vector<uint8_t>> brotli_decompress(std::span<const uint8_t> data,
                                                         size_t expected_size) {
     // Allocate output; brotli does not store decompressed size in the stream,
-    // so we start with expected_size (or 4× input as fallback).
+    // so we start with expected_size (or 4x input as fallback).
     size_t alloc = (expected_size != 0) ? expected_size : data.size() * 4;
     std::vector<uint8_t> out(alloc);
     size_t out_size = alloc;
@@ -197,7 +197,7 @@ static Result<std::vector<uint8_t>> brotli_decompress(std::span<const uint8_t> d
 
 static Result<std::vector<uint8_t>> lz4_compress_impl(std::span<const uint8_t> data) {
     // LZ4 Frame: use LZ4F_compressFrame for a self-contained, independently
-    // decompressable frame (meets per-chunk independence requirement §7.3).
+    // decompressable frame (meets per-chunk independence requirement Section 7.3).
     const size_t bound = LZ4F_compressFrameBound(data.size(), nullptr);
     std::vector<uint8_t> out(bound);
 

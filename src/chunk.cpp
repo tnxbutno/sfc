@@ -125,7 +125,7 @@ std::array<uint8_t, 36> serialize_chunk_trailer(const Blake3Digest& hash) {
 
 Result<std::pair<ParsedChunk, size_t>> parse_chunk(std::span<const uint8_t> data) {
     constexpr size_t kHdrSize        = 48;
-    constexpr size_t kChunkTailSize  = 36;  // per-chunk trailer (hash + "/CHK"), §3.3
+    constexpr size_t kChunkTailSize  = 36;  // per-chunk trailer (hash + "/CHK"), Section 3.3
 
     if (data.size() < kHdrSize) {
         return std::unexpected(SfcError{

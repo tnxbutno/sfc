@@ -1,5 +1,5 @@
 /// @file reassembly.cpp
-/// @brief Reassembly procedures §9.1, §9.3, and duplicate handling §9.5.
+/// @brief Reassembly procedures Section 9.1, Section 9.3, and duplicate handling Section 9.5.
 
 #include "sfc/reassembly.h"
 #include "sfc/blake3_hash.h"
@@ -14,7 +14,7 @@
 namespace sfc {
 
 // ===========================================================================
-// §9.5 Duplicate handling
+// Section 9.5 Duplicate handling
 // ===========================================================================
 
 Result<std::vector<ParsedChunk>> handle_duplicates(std::vector<ParsedChunk> chunks) {
@@ -51,19 +51,19 @@ Result<std::vector<ParsedChunk>> handle_duplicates(std::vector<ParsedChunk> chun
         }
 
         if (passing.size() == 1) {
-            // B1: exactly one passes — keep it, discard others.
+            // B1: exactly one passes - keep it, discard others.
             for (size_t pos : positions) {
                 if (pos != passing[0]) keep[pos] = false;
             }
         } else if (passing.size() > 1) {
-            // B2: multiple copies pass — contaminated duplicate, halt.
+            // B2: multiple copies pass - contaminated duplicate, halt.
             return std::unexpected(SfcError{
                 ErrorCode::ContaminatedDuplicate,
                 std::format("chunk index {}: contaminated duplicate (B2: {} copies pass hash)",
                             idx, passing.size())
             });
         } else {
-            // B3: none pass — discard all.
+            // B3: none pass - discard all.
             for (size_t pos : positions) keep[pos] = false;
         }
     }
@@ -78,7 +78,7 @@ Result<std::vector<ParsedChunk>> handle_duplicates(std::vector<ParsedChunk> chun
 }
 
 // ===========================================================================
-// §9.1 Full Reassembly
+// Section 9.1 Full Reassembly
 // ===========================================================================
 
 Result<ReassemblyResult> full_reassembly(
@@ -124,7 +124,7 @@ Result<ReassemblyResult> full_reassembly(
 }
 
 // ===========================================================================
-// §9.3 Partial Reassembly
+// Section 9.3 Partial Reassembly
 // ===========================================================================
 
 Result<ReassemblyResult> partial_reassembly(

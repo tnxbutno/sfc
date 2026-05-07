@@ -1,12 +1,12 @@
 /// @file directory.cpp
-/// @brief Directory profile implementation (P5, §16).
+/// @brief Directory profile implementation (P5, Section 16).
 ///
 /// Encoding layout (inner_content):
 ///   [0 .. manifest_size-1]  Manifest  (8+B+32 bytes)
 ///   [manifest_size ..]      File bytes concatenated in manifest order
 ///
 /// manifest_size  = 8 (MFST header) + B + 32 (BLAKE3)
-/// B              = 4 (F field) + Σ(52 + path_len)  for all files
+/// B              = 4 (F field) + sum(52 + path_len)  for all files
 
 #include "sfc/directory.h"
 
@@ -29,7 +29,7 @@ namespace sfc {
 // Internal helpers
 // ===========================================================================
 
-/// @brief Validate a single relative file path per §16 rules.
+/// @brief Validate a single relative file path per Section 16 rules.
 ///
 /// Returns false if the path is empty, starts with '/', contains '\\',
 /// has a ".." or "." component, contains control characters, or has
@@ -65,7 +65,7 @@ namespace sfc {
 /// @brief Compute manifest_size from a list of paths without serializing.
 ///
 /// manifest_size = 8 (header) + B + 32 (hash)
-/// B             = 4 (F field) + Σ(52 + path.size())
+/// B             = 4 (F field) + sum(52 + path.size())
 [[nodiscard]] static uint64_t compute_manifest_size(
     const std::vector<DirectoryInputFile>& files) noexcept
 {
@@ -84,19 +84,19 @@ namespace sfc {
 
 /// @brief Validate, sort, hash, and serialise directory files into inner content.
 ///
-/// Performs steps 1-8 of the directory encoding pipeline (P5, §16), producing
+/// Performs steps 1-8 of the directory encoding pipeline (P5, Section 16), producing
 /// the raw inner_content bytes (manifest || file data) and the updated EncodeParams
 /// with directory profile flags set.
 /// Both encode_directory and encode_directory_split delegate here.
 [[nodiscard]] static Result<std::pair<std::vector<uint8_t>, EncodeParams>>
 prepare_directory_inner(std::vector<DirectoryInputFile> files, EncodeParams params) {
-    // Directory profile requires at least one file (F >= 1, §16.2).
+    // Directory profile requires at least one file (F >= 1, Section 16.2).
     if (files.empty()) {
         return std::unexpected(SfcError{
             ErrorCode::FieldBelowMinimum, "directory must contain at least one file (F >= 1)"
         });
     }
-    // Directory profile requires S >= 8 so Manifest Magic and B fit in chunk 0 (§16.1).
+    // Directory profile requires S >= 8 so Manifest Magic and B fit in chunk 0 (Section 16.1).
     if (params.s < 8) {
         return std::unexpected(SfcError{
             ErrorCode::FieldBelowMinimum,
@@ -104,9 +104,9 @@ prepare_directory_inner(std::vector<DirectoryInputFile> files, EncodeParams para
         });
     }
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Step 1: Validate all paths.
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     for (const auto& f : files) {
         if (!is_valid_directory_path(f.path)) {
             return std::unexpected(SfcError{
@@ -116,9 +116,9 @@ prepare_directory_inner(std::vector<DirectoryInputFile> files, EncodeParams para
         }
     }
 
-    // ------------------------------------------------------------------
-    // Step 2: Detect case collisions (§4.8).
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
+    // Step 2: Detect case collisions (Section 4.8).
+    // ---------------------------------------------------------------------------
     std::unordered_map<std::string, std::string> seen_folded;
     for (const auto& f : files) {
         std::string folded = case_fold(f.path);
@@ -131,26 +131,26 @@ prepare_directory_inner(std::vector<DirectoryInputFile> files, EncodeParams para
         }
     }
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Step 3: Sort files by path (lexicographic on UTF-8 bytes).
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     std::sort(files.begin(), files.end(),
               [](const DirectoryInputFile& a, const DirectoryInputFile& b) {
                   return a.path < b.path;
               });
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Step 4: Compute per-file BLAKE3 hashes.
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     std::vector<Blake3Digest> file_hashes;
     file_hashes.reserve(files.size());
     for (const auto& f : files) {
         file_hashes.push_back(blake3(f.content));
     }
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Step 5: Compute manifest_size, then derive byte_offsets.
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     const uint64_t manifest_sz = compute_manifest_size(files);
 
     std::vector<uint64_t> byte_offsets(files.size());
@@ -162,9 +162,9 @@ prepare_directory_inner(std::vector<DirectoryInputFile> files, EncodeParams para
         }
     }
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Step 6: Build ManifestFileEntry list and serialize manifest.
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     std::vector<ManifestFileEntry> entries;
     entries.reserve(files.size());
     for (size_t i = 0; i < files.size(); ++i) {
@@ -179,9 +179,9 @@ prepare_directory_inner(std::vector<DirectoryInputFile> files, EncodeParams para
 
     auto manifest_bytes = serialize_manifest(entries);
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Step 7: Build inner_content = manifest || file contents.
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     uint64_t total_file_bytes = 0;
     for (const auto& f : files) total_file_bytes += f.content.size();
 
@@ -194,9 +194,9 @@ prepare_directory_inner(std::vector<DirectoryInputFile> files, EncodeParams para
                              f.content.begin(), f.content.end());
     }
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Step 8: Override format_id, set directory profile flag, clear inner filename.
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     params.format_id  = static_cast<uint16_t>(InnerFormatId::SfcDirectory);
     params.flags     |= static_cast<uint16_t>(1u << static_cast<uint16_t>(FlagBit::DirectoryProfile));
     params.filename   = "";
@@ -236,9 +236,9 @@ encode_directory_split(std::vector<DirectoryInputFile> files,
 
 Result<DirectoryExtractResult>
 extract_directory_full(std::span<const uint8_t> inner_content) {
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Read manifest_size from the first 8 bytes (MFST + B).
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     if (inner_content.size() < 8) {
         return std::unexpected(SfcError{
             ErrorCode::InvalidMagic, "inner_content too small for manifest header"
@@ -258,18 +258,18 @@ extract_directory_full(std::span<const uint8_t> inner_content) {
         });
     }
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Parse and hash-verify the Manifest.
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     auto mfst_res = parse_manifest(inner_content.subspan(0, manifest_sz));
     if (!mfst_res) return std::unexpected(mfst_res.error());
     const Manifest& mfst = *mfst_res;
 
-    // ------------------------------------------------------------------
-    // Validate byte_offset consistency (§16.7).
+    // ---------------------------------------------------------------------------
+    // Validate byte_offset consistency (Section 16.7).
     // First file must start at manifest_sz; entries must be contiguous.
-    // Path length L must be at least 1 (§16.7 step 2f, §18.3).
-    // ------------------------------------------------------------------
+    // Path length L must be at least 1 (Section 16.7 step 2f, Section 18.3).
+    // ---------------------------------------------------------------------------
     for (size_t i = 0; i < mfst.entries.size(); ++i) {
         if (mfst.entries[i].path.empty()) {
             return std::unexpected(SfcError{
@@ -308,9 +308,9 @@ extract_directory_full(std::span<const uint8_t> inner_content) {
         });
     }
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Extract and BLAKE3-verify each file.
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     DirectoryExtractResult result;
     result.files.reserve(mfst.entries.size());
 
@@ -345,14 +345,14 @@ Result<DirectoryExtractResult>
 extract_directory_partial(const std::vector<ParsedChunk>& working_set,
                           const GlobalHeader& hdr)
 {
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Count distinct data chunks available (V_data).
     // V = working_set.size() counts all chunks including recovery.
     // For RS reconstruction we need at least N total chunks.
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     const CompressionAlgo algo = normalize_compression_id(hdr.compression_algo);
 
-    // Check if V ≥ N  (we might be able to do full reconstruction).
+    // Check if V >= N  (we might be able to do full reconstruction).
     if (working_set.size() >= hdr.n) {
         // Sort working_set by index; try RS reconstruct.
         std::vector<RsChunk> rs_inputs;
@@ -402,11 +402,11 @@ extract_directory_partial(const std::vector<ParsedChunk>& working_set,
         // Fall through to Case B if RS inputs insufficient.
     }
 
-    // ------------------------------------------------------------------
-    // Case B: V < N — partial extraction from available data chunks.
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
+    // Case B: V < N - partial extraction from available data chunks.
+    // ---------------------------------------------------------------------------
 
-    // Build a map: data_chunk_index → decompressed data.
+    // Build a map: data_chunk_index -> decompressed data.
     // Use S=0 for expected_size so decompress skips the size check for
     // partial blocks (the last chunk may not fill S bytes when trimmed).
     std::unordered_map<uint32_t, std::vector<uint8_t>> decompressed;
@@ -430,7 +430,7 @@ extract_directory_partial(const std::vector<ParsedChunk>& working_set,
     if (!ms_res) return std::unexpected(ms_res.error());
     const uint64_t manifest_sz = *ms_res;
 
-    // K = ceil(manifest_size / S) — number of chunks that hold the manifest.
+    // K = ceil(manifest_size / S) - number of chunks that hold the manifest.
     const uint64_t K = (manifest_sz + hdr.s - 1) / hdr.s;
 
     // Ensure all K manifest chunks are available.
@@ -456,12 +456,12 @@ extract_directory_partial(const std::vector<ParsedChunk>& working_set,
     if (!mfst_res) return std::unexpected(mfst_res.error());
     const Manifest& mfst = *mfst_res;
 
-    // ------------------------------------------------------------------
-    // Validate byte_offset consistency (§16.8 Case B, same as §16.7 step 2f).
-    // Also validate L >= 1 (§16.7 step 2f, §18.3).
+    // ---------------------------------------------------------------------------
+    // Validate byte_offset consistency (Section 16.8 Case B, same as Section 16.7 step 2f).
+    // Also validate L >= 1 (Section 16.7 step 2f, Section 18.3).
     // A malicious manifest could use crafted byte_offset values to cause
     // out-of-bounds reads when slicing concatenated chunk data.
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     for (size_t i = 0; i < mfst.entries.size(); ++i) {
         if (mfst.entries[i].path.empty()) {
             return std::unexpected(SfcError{
@@ -492,10 +492,10 @@ extract_directory_partial(const std::vector<ParsedChunk>& working_set,
         }
     }
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // For each file in the manifest: determine covering chunks and extract
     // if all covering chunks are available.
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     DirectoryExtractResult result;
 
     for (const auto& entry : mfst.entries) {
@@ -554,7 +554,7 @@ extract_directory_partial(const std::vector<ParsedChunk>& working_set,
         const size_t end_in_concat = start_in_concat + static_cast<size_t>(entry.file_size);
 
         if (end_in_concat > concat.size()) {
-            // Decompressed data too short — skip (shouldn't happen).
+            // Decompressed data too short - skip (shouldn't happen).
             result.pending_paths.push_back(entry.path);
             continue;
         }

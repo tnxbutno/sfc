@@ -56,6 +56,22 @@ Both profiles are optional in the spec. The flag bits and TLV tags for both are 
 
 BLAKE3 and GoogleTest are fetched automatically by CMake.
 
+## Web demo
+
+Try it at **[tnxbutno.github.io/sfc](https://tnxbutno.github.io/sfc)** — pack and unpack SFC files directly in the browser, no installation required. The entire SFC library is compiled to WebAssembly via Emscripten; no data leaves your device.
+
+To build and test the WASM module locally:
+
+```bash
+# Requires Emscripten (https://emscripten.org/docs/getting_started/downloads.html)
+emcmake cmake -S wasm -B wasm/build -DCMAKE_BUILD_TYPE=Release
+cmake --build wasm/build          # output: web/sfc_wasm.js
+node wasm/test_wasm.js            # Node.js encode/decode/info/verify test suite
+open web/index.html               # browser UI (no server needed — WASM is inlined)
+```
+
+All dependencies (zstd, brotli, lz4, blake3) are fetched and compiled automatically; no system packages required. CI runs the Node.js tests and deploys `web/` to GitHub Pages on every push to `main`. To enable the deployment, go to repository Settings → Pages → Build and deployment → Source → **GitHub Actions** (one-time setup).
+
 ## Installation
 
 ```bash

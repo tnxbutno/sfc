@@ -7,7 +7,7 @@
 /// Field polynomial: x^16 + x^5 + x^3 + x^2 + 1  (0x1002D).
 /// All functions are pure (no side effects) and operate on uint16_t elements.
 ///
-/// Reference values (spec §6.4):
+/// Reference values (spec Section 6.4):
 ///   gf_inv(2) == 0x8016
 ///   gf_inv(3) == 0xFFE4
 
@@ -57,7 +57,7 @@ extern const LogTable kLogTable;
 /// @param b Second field element.
 /// @return a XOR b.
 [[nodiscard]] constexpr uint16_t gf_add(uint16_t a, uint16_t b) noexcept {
-    // In GF(2^k) addition equals bitwise XOR — no carry propagates.
+    // In GF(2^k) addition equals bitwise XOR - no carry propagates.
     return static_cast<uint16_t>(a ^ b);
 }
 
@@ -70,7 +70,7 @@ extern const LogTable kLogTable;
 /// @brief GF(2^16) multiplicative inverse.
 /// @param a Non-zero field element.
 /// @return a^-1 such that gf_mul(a, gf_inv(a)) == 1.
-///         Returns 0 for input 0 (undefined — caller must ensure a != 0).
+///         Returns 0 for input 0 (undefined - caller must ensure a != 0).
 [[nodiscard]] uint16_t gf_inv(uint16_t a) noexcept;
 
 // ---------------------------------------------------------------------------

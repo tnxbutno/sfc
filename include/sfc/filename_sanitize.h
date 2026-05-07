@@ -24,7 +24,7 @@ namespace sfc {
 // Individual sanitization passes (exposed for testability)
 // ---------------------------------------------------------------------------
 
-/// @brief Pass 1: replace forbidden bytes (§4.8 byte-level sanitization).
+/// @brief Pass 1: replace forbidden bytes (Section 4.8 byte-level sanitization).
 ///
 /// Each maximal contiguous run of forbidden bytes (0x00-0x1F, '/', '\')
 /// is replaced by a single '_' (0x5F).
@@ -49,15 +49,15 @@ replace_invalid_utf8(std::span<const uint8_t> input) noexcept;
 // Full sanitization entry-point
 // ---------------------------------------------------------------------------
 
-/// @brief Apply full §4.8 sanitization to an inner filename field.
+/// @brief Apply full Section 4.8 sanitization to an inner filename field.
 ///
 /// Steps:
 ///   1. Read bytes up to the first null (0x00).
-///   2. Verify all bytes after the null are zero; error if not (§4.8 rule).
+///   2. Verify all bytes after the null are zero; error if not (Section 4.8 rule).
 ///   3. Apply replace_forbidden_bytes (Pass 1).
 ///   4. Apply replace_invalid_utf8 (Pass 2).
-///   5. Reject if result is empty (§4.8 rule b: "empty inner filename").
-///   6. Reject if result equals "." or ".." (§4.8 encoder MUST NOT rules).
+///   5. Reject if result is empty (Section 4.8 rule b: "empty inner filename").
+///   6. Reject if result equals "." or ".." (Section 4.8 encoder MUST NOT rules).
 ///
 /// @param raw_field 255-byte filename field from the Global Header.
 /// @return Result<string>: sanitized filename on success, SfcError on failure.

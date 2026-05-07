@@ -1,10 +1,10 @@
 /// @file blake3_hash.cpp
-/// @brief BLAKE3 hashing implementation — thin wrapper over the BLAKE3 C API.
+/// @brief BLAKE3 hashing implementation - thin wrapper over the BLAKE3 C API.
 ///
 /// The BLAKE3 C API (blake3.h) is a streaming hasher:
-///   blake3_hasher_init()    — initialise state
-///   blake3_hasher_update()  — feed bytes (may be called multiple times)
-///   blake3_hasher_finalize()— produce digest
+///   blake3_hasher_init()    - initialise state
+///   blake3_hasher_update()  - feed bytes (may be called multiple times)
+///   blake3_hasher_finalize()- produce digest
 ///
 /// All functions here are pure: same input always produces same output.
 
@@ -44,7 +44,7 @@ Blake3Digest blake3_concat(std::span<const uint8_t> a,
                            std::span<const uint8_t> b) noexcept {
     blake3_hasher h;
     blake3_hasher_init(&h);
-    // Feed first span, then second — equivalent to hashing their concatenation.
+    // Feed first span, then second - equivalent to hashing their concatenation.
     blake3_hasher_update(&h, a.data(), a.size());
     blake3_hasher_update(&h, b.data(), b.size());
     return finalise(h);

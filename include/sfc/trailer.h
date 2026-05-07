@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file trailer.h
-/// @brief Pure parse/serialize for the SFC File Trailer (§3.4, 64 bytes).
+/// @brief Pure parse/serialize for the SFC File Trailer (Section 3.4, 64 bytes).
 ///
 /// Layout:
 ///   [0]  4   "TRLR" magic (0x54 0x52 0x4C 0x52)

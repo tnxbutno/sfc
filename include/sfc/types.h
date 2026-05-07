@@ -4,7 +4,7 @@
 /// @brief Core types, enums, and protocol constants for SFC format (draft-sfc-container-format-01).
 ///
 /// This header defines all value types, magic bytes, version numbers,
-/// and hard protocol limits from the SFC specification. No logic here —
+/// and hard protocol limits from the SFC specification. No logic here -
 /// only data definitions.
 
 #include <array>
@@ -110,11 +110,11 @@ enum class InnerFormatId : uint16_t {
 enum class FlagBit : uint16_t {
     SplitTransport   = 0,  ///< Bit 0: file uses split transport
     // Bits 1-3: reserved permanently
-    ImageProfile     = 4,  ///< Bit 4: image profile (P1, §12)
-    SplitProfile     = 5,  ///< Bit 5: split transport profile (P2, §13)
-    HttpProfile      = 6,  ///< Bit 6: HTTP delivery profile (P3, §14)
-    PreprocessProfile = 7, ///< Bit 7: preprocessing profile (P4, §15)
-    DirectoryProfile = 8,  ///< Bit 8: multi-file directory profile (P5, §16)
+    ImageProfile     = 4,  ///< Bit 4: image profile (P1, Section 12)
+    SplitProfile     = 5,  ///< Bit 5: split transport profile (P2, Section 13)
+    HttpProfile      = 6,  ///< Bit 6: HTTP delivery profile (P3, Section 14)
+    PreprocessProfile = 7, ///< Bit 7: preprocessing profile (P4, Section 15)
+    DirectoryProfile = 8,  ///< Bit 8: multi-file directory profile (P5, Section 16)
     // Bits 9-15: reserved for future profiles
 };
 
@@ -143,7 +143,7 @@ inline constexpr uint32_t kMaxMetadataStringLength = 4'096;               ///< m
 }  // namespace limits
 
 // ---------------------------------------------------------------------------
-// FileMetadata — optional user-supplied metadata stored in TLV fields
+// FileMetadata - optional user-supplied metadata stored in TLV fields
 // ---------------------------------------------------------------------------
 
 /// User-supplied metadata that travels with every SFC file.
@@ -157,7 +157,7 @@ struct FileMetadata {
 };
 
 // ---------------------------------------------------------------------------
-// FileUuid — 128-bit identifier (Section 4.1)
+// FileUuid - 128-bit identifier (Section 4.1)
 // ---------------------------------------------------------------------------
 
 /// 128-bit File UUID. Value type with equality and hashing.

@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file tlv.h
-/// @brief Pure TLV (Type-Length-Value) parsing and serialization per SFC §3.2.
+/// @brief Pure TLV (Type-Length-Value) parsing and serialization per SFC Section 3.2.
 ///
 /// Each TLV field: 2-byte tag (LE) + 4-byte length L (LE) + L bytes value.
 /// Rules: known tags appear at most once; unknown tags may be repeated and
@@ -33,7 +33,7 @@ parse_tlv_fields(std::span<const uint8_t> data);
 /// @brief Serialize TLV fields into bytes.
 ///
 /// Fields are serialized in the order given. Callers are responsible
-/// for ascending-tag ordering (per §3.2 rule d).
+/// for ascending-tag ordering (per Section 3.2 rule d).
 ///
 /// @param fields TLV fields to serialize.
 /// @return Serialized bytes.
@@ -42,10 +42,10 @@ serialize_tlv_fields(const std::vector<TlvField>& fields);
 
 /// @brief Known TLV tag values.
 namespace TlvTag {
-    inline constexpr uint16_t kChunkOffsetIndex = 0x0020; ///< HTTP delivery profile (P3, §14): chunk byte offsets (uint64[])
-    inline constexpr uint16_t kOriginalFormatId = 0x0030; ///< preprocessing profile (P4, §15): original format ID (uint16 LE)
+    inline constexpr uint16_t kChunkOffsetIndex = 0x0020; ///< HTTP delivery profile (P3, Section 14): chunk byte offsets (uint64[])
+    inline constexpr uint16_t kOriginalFormatId = 0x0030; ///< preprocessing profile (P4, Section 15): original format ID (uint16 LE)
 
-    // Metadata tags (§3.2): UTF-8 strings, max 4096 bytes each.
+    // Metadata tags (Section 3.2): UTF-8 strings, max 4096 bytes each.
     inline constexpr uint16_t kAuthor      = 0x0100; ///< Author name
     inline constexpr uint16_t kDescription = 0x0101; ///< Description
     inline constexpr uint16_t kLocation    = 0x0102; ///< Location (place name or geo string)

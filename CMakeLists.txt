@@ -28,7 +28,7 @@ endif()
 # ---------------------------------------------------------------------------
 # Compiler warning flags
 # ---------------------------------------------------------------------------
-# Applied to sfc_lib (strict) and sfc_tests (slightly relaxed — avoids pedantic
+# Applied to sfc_lib (strict) and sfc_tests (slightly relaxed - avoids pedantic
 # issues inside GTest macro expansions).
 
 if(MSVC)
@@ -49,7 +49,7 @@ else()
         -Wimplicit-fallthrough
         -Werror
     )
-    # Tests: same but skip -Wpedantic and conversion warnings — GTest macros
+    # Tests: same but skip -Wpedantic and conversion warnings - GTest macros
     # are not written to our stricter standard.
     # -Wno-missing-field-initializers: GCC fires on partial designated init
     # even though C++ zero-initializes omitted fields; suppress for tests.
@@ -89,7 +89,7 @@ endif()
 
 include(FetchContent)
 
-# BLAKE3 — vendored via FetchContent (not in Homebrew)
+# BLAKE3 - vendored via FetchContent (not in Homebrew)
 FetchContent_Declare(
     blake3
     GIT_REPOSITORY https://github.com/BLAKE3-team/BLAKE3.git
@@ -98,7 +98,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(blake3)
 
-# CLI11 — header-only argument parsing for the sfc CLI
+# CLI11 - header-only argument parsing for the sfc CLI
 FetchContent_Declare(
     CLI11
     GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
@@ -106,7 +106,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(CLI11)
 
-# zstd, brotli, lz4 — Windows uses find_package (vcpkg), Unix uses pkg-config.
+# zstd, brotli, lz4 - Windows uses find_package (vcpkg), Unix uses pkg-config.
 if(WIN32)
     find_package(zstd CONFIG REQUIRED)
     find_package(unofficial-brotli CONFIG REQUIRED)
@@ -341,7 +341,7 @@ if(CPPCHECK_EXE)
         COMMAND ${CPPCHECK_EXE}
             --enable=all
             --inconclusive
-            --error-exitcode=1        # non-zero exit → CMake treats as failure
+            --error-exitcode=1        # non-zero exit -> CMake treats as failure
             --std=c++23
             --language=c++
             --suppress=missingIncludeSystem   # system headers not on search path
@@ -425,7 +425,7 @@ set_target_properties(sfc_cli PROPERTIES OUTPUT_NAME sfc)
 target_include_directories(sfc_cli PRIVATE cli)
 target_link_libraries(sfc_cli PRIVATE sfc_lib CLI11::CLI11)
 
-# Use relaxed warnings (same as tests) — CLI11 macros not written to lib standard.
+# Use relaxed warnings (same as tests) - CLI11 macros not written to lib standard.
 target_compile_options(sfc_cli PRIVATE ${SFC_WARN_TESTS})
 
 # Propagate sanitizer flags when building in ASan/TSan mode.

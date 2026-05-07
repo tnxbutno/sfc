@@ -1,5 +1,5 @@
 /// @file cmd_info.cpp
-/// @brief `sfc info` — display container metadata without extracting.
+/// @brief `sfc info` - display container metadata without extracting.
 
 #include "cmd_info.h"
 #include "utils.h"
@@ -29,7 +29,7 @@ void setup_info(CLI::App& app) {
         bool any_error = false;
 
         for (const auto& path : opts->inputs) {
-            // ── Load file ─────────────────────────────────────────────────
+            // -- Load file -------------------------------------------------
             std::vector<uint8_t> data;
             try {
                 data = cli::read_file(path);
@@ -39,7 +39,7 @@ void setup_info(CLI::App& app) {
                 continue;
             }
 
-            // ── Parse global header ───────────────────────────────────────
+            // -- Parse global header ---------------------------------------
             auto hdr = cli::parse_header_from_file(data);
             if (!hdr) {
                 std::println(stderr, "{}: {}", path, hdr.error().detail);
@@ -47,10 +47,10 @@ void setup_info(CLI::App& app) {
                 continue;
             }
 
-            // ── Check for split-transport segment header ───────────────────
+            // -- Check for split-transport segment header -------------------
             auto seg = cli::parse_segment_hdr_from_file(data);
 
-            // ── Print ─────────────────────────────────────────────────────
+            // -- Print -----------------------------------------------------
             if (opts->inputs.size() > 1) std::println("── {} ──", path);
 
             std::println("File:       {}", path);
@@ -95,7 +95,7 @@ void setup_info(CLI::App& app) {
             std::println("Timestamp:  {}", cli::format_timestamp(timestamp));
             std::println("Trailer:    {}", has_trailer ? "present" : "absent");
 
-            // Metadata TLV fields (0x0100–0x0104): display if present.
+            // Metadata TLV fields (0x0100-0x0104): display if present.
             auto get_meta = [&](uint16_t tag) -> std::string {
                 for (const auto& f : hdr->tlv_fields) {
                     if (f.tag == tag)

@@ -1,5 +1,5 @@
 /// @file split_encoder.cpp
-/// @brief Split transport encoder (P2, §13).
+/// @brief Split transport encoder (P2, Section 13).
 ///
 /// Pipeline (mirrors encoder.cpp, then distributes instead of monolithic assembly):
 ///   1. Validate params.
@@ -35,7 +35,7 @@ namespace sfc {
 // Internal helpers (file-local)
 // ---------------------------------------------------------------------------
 
-/// Compute the image profile (P1) priority list per §12.4 (mirrors encoder.cpp).
+/// Compute the image profile (P1) priority list per Section 12.4 (mirrors encoder.cpp).
 static Result<std::vector<uint32_t>>
 resolve_p1_priority(uint16_t format_id, uint32_t n,
                     const std::vector<uint32_t>& override_list, bool p1_flag) {
@@ -46,7 +46,7 @@ resolve_p1_priority(uint16_t format_id, uint32_t n,
     if (fid == InnerFormatId::Jpeg2000 || fid == InnerFormatId::JpegXl) {
         return std::unexpected(SfcError{
             ErrorCode::ProfileMustViolation,
-            "image profile (P1) Class P format (JPEG 2000/XL): priority_list must be provided (§12.4)"
+            "JPEG 2000/JPEG XL input requires priority_list when image profile is enabled"
         });
     }
     if (fid == InnerFormatId::JpegBaseline) {
@@ -148,7 +148,7 @@ encode_split(std::span<const uint8_t> content,
     // --- Step 4: RS-encode recovery blocks, then compress ---
     std::vector<std::vector<uint8_t>> recovery_payloads;
     if (params.m > 0) {
-        // RS operates on uncompressed data blocks (§6.4).
+        // RS operates on uncompressed data blocks (Section 6.4).
         auto rs_res = rs_encode(data_blocks, params.m);
         if (!rs_res) return std::unexpected(rs_res.error());
 
@@ -160,7 +160,7 @@ encode_split(std::span<const uint8_t> content,
         }
     }
 
-    // --- Step 5: build GlobalHeader with split transport flags (P2, §13) ---
+    // --- Step 5: build GlobalHeader with split transport flags (P2, Section 13) ---
     GlobalHeader ghdr{};
     ghdr.uuid             = params.uuid;
     ghdr.inner_file_size  = inner_size;
@@ -176,7 +176,7 @@ encode_split(std::span<const uint8_t> content,
                  (1u << static_cast<uint16_t>(FlagBit::SplitTransport)) |
                  (1u << static_cast<uint16_t>(FlagBit::SplitProfile));
 
-    // Priority list per §12.4.
+    // Priority list per Section 12.4.
     const bool p1_flag = (params.flags & (1u << static_cast<uint16_t>(FlagBit::ImageProfile))) != 0;
     auto prio_res = resolve_p1_priority(params.format_id, n, params.priority_list, p1_flag);
     if (!prio_res) return std::unexpected(prio_res.error());
@@ -187,7 +187,7 @@ encode_split(std::span<const uint8_t> content,
     std::copy_n(params.filename.begin(), fname_len, ghdr.inner_filename.begin());
     ghdr.global_hash = blake3(content);  // BLAKE3 of the TRIMMED content
 
-    // Metadata TLV fields — same logic as encoder.cpp.
+    // Metadata TLV fields - same logic as encoder.cpp.
     auto add_meta_tlv = [&](uint16_t tag, const std::string& s) -> VoidResult {
         if (s.empty()) return {};
         if (s.size() > limits::kMaxMetadataStringLength) {
@@ -212,8 +212,8 @@ encode_split(std::span<const uint8_t> content,
     // Validate before serializing (catches field constraint violations early).
     if (auto v = validate_global_header(ghdr); !v) return std::unexpected(v.error());
 
-    // Serialize header region (H+4 bytes) — shared across all segments.
-    // Fails if priority list + TLV would push H above 65,536 bytes (§4.5 rule g).
+    // Serialize header region (H+4 bytes) - shared across all segments.
+    // Fails if priority list + TLV would push H above 65,536 bytes (Section 4.5 rule g).
     auto header_region_res = serialize_global_header(ghdr);
     if (!header_region_res) return std::unexpected(header_region_res.error());
     auto& header_region = *header_region_res;
@@ -237,10 +237,10 @@ encode_split(std::span<const uint8_t> content,
         all_chunk_bytes[n + i] = serialize_chunk(hdr, recovery_payloads[i]);
     }
 
-    // Cap num_segments at total_chunks so every segment gets ≥ 1 chunk.
+    // Cap num_segments at total_chunks so every segment gets >= 1 chunk.
     if (num_segments > total_chunks) num_segments = total_chunks;
 
-    // Build the Trailer once — only the terminal segment includes it.
+    // Build the Trailer once - only the terminal segment includes it.
     Trailer trlr{};
     trlr.header_hash = blake3(header_region);  // BLAKE3 of the Global Header Region
     trlr.timestamp   = params.timestamp;

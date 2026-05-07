@@ -1,5 +1,5 @@
 /// @file split_decoder.cpp
-/// @brief Split transport decoder (P2, §13).
+/// @brief Split transport decoder (P2, Section 13).
 ///
 /// Strategy for decode_split:
 ///   1. Parse each segment into its structural components (header_region,
@@ -40,9 +40,9 @@ decode_split(std::span<const std::vector<uint8_t>> segments) {
         });
     }
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Per-segment parse result.
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     struct SegmentData {
         std::vector<uint8_t> header_region;   // H+4 bytes
         SegmentHeader        seg_hdr;          // parsed Segment Header
@@ -53,7 +53,7 @@ decode_split(std::span<const std::vector<uint8_t>> segments) {
 
     std::vector<SegmentData> parsed(segments.size());
 
-    // Remember segment-0 version bytes for cross-segment comparison (§13.2).
+    // Remember segment-0 version bytes for cross-segment comparison (Section 13.2).
     uint16_t ver_major_0 = 0, ver_minor_0 = 0;
 
     for (size_t i = 0; i < segments.size(); ++i) {
@@ -133,18 +133,18 @@ decode_split(std::span<const std::vector<uint8_t>> segments) {
         const size_t chunk_start = sh_offset + 16;
         size_t       chunk_end   = seg.size();
 
-        // Inspect the last 64 bytes for a Trailer per the terminal conflict table (§13.4).
+        // Inspect the last 64 bytes for a Trailer per the terminal conflict table (Section 13.4).
         pd.has_trailer = false;
         if (seg.size() >= chunk_start + 64) {
             auto trailer_span = std::span<const uint8_t, 64>{
                 seg.data() + seg.size() - 64, 64};
             auto tr_res = parse_trailer(trailer_span);
             if (tr_res) {
-                // TRLR magic present — validate the hash.
+                // TRLR magic present - validate the hash.
                 auto th_res = validate_trailer_hash(*tr_res, pd.header_region);
                 if (th_res) {
                     if (!pd.seg_hdr.is_terminal) {
-                        // Row 4: valid Trailer on a non-terminal segment → error.
+                        // Row 4: valid Trailer on a non-terminal segment -> error.
                         return std::unexpected(SfcError{
                             ErrorCode::TerminalByTrailerOnlyNoFlag,
                             std::format("segment {}: valid Trailer on non-terminal segment", i)
@@ -155,7 +155,7 @@ decode_split(std::span<const std::vector<uint8_t>> segments) {
                     chunk_end = seg.size() - 64;
                 } else {
                     if (pd.seg_hdr.is_terminal) {
-                        // Row 3: terminal flag set, TRLR magic present, hash wrong → error.
+                        // Row 3: terminal flag set, TRLR magic present, hash wrong -> error.
                         return std::unexpected(SfcError{
                             ErrorCode::TerminalFlagButTrailerInvalid,
                             std::format("segment {}: terminal segment has TRLR magic but invalid hash", i)
@@ -171,9 +171,9 @@ decode_split(std::span<const std::vector<uint8_t>> segments) {
                                seg.begin() + static_cast<std::ptrdiff_t>(chunk_end));
     }
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Cross-segment validation
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
 
     // All header_regions must be byte-identical.
     for (size_t i = 1; i < parsed.size(); ++i) {
@@ -232,9 +232,9 @@ decode_split(std::span<const std::vector<uint8_t>> segments) {
         });
     }
 
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Build a virtual monolithic SFC file and delegate to decode()
-    // ------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
 
     // Sort by segment_index so chunks appear in the intended order.
     std::vector<size_t> order(parsed.size());
@@ -297,11 +297,11 @@ decode_split(std::span<const std::vector<uint8_t>> segments) {
 
 Result<std::vector<MultiDecodeEntry>>
 decode_multi(std::span<const std::vector<uint8_t>> files) {
-    // -----------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Step 1: Read UUID (file offset 12, 16 bytes) and flags (offset 339,
     // 2 bytes) from each file.  Both are at fixed positions that do not
     // depend on the H field value for any valid SFC file.
-    // -----------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     struct FileInfo {
         FileUuid uuid;
         bool     is_p2;   // SPLIT_TRANSPORT flag (bit 0) set
@@ -331,15 +331,15 @@ decode_multi(std::span<const std::vector<uint8_t>> files) {
         const uint16_t flags = read_u16_le(
             std::span<const uint8_t, 2>{f.data() + 339, 2});
 
-        // Bit 0 = SPLIT_TRANSPORT → this file is a split-transport segment (P2, §13).
+        // Bit 0 = SPLIT_TRANSPORT -> this file is a split-transport segment (P2, Section 13).
         const bool is_p2 = (flags & (1u << static_cast<uint16_t>(FlagBit::SplitTransport))) != 0;
 
         infos.push_back({uuid, is_p2});
     }
 
-    // -----------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Step 2: Group split-transport files by UUID; decode regular files individually.
-    // -----------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     std::vector<MultiDecodeEntry> result;
     std::vector<bool> processed(files.size(), false);
 

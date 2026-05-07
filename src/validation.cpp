@@ -1,5 +1,5 @@
 /// @file validation.cpp
-/// @brief SFC validation pipeline D1–D5.
+/// @brief SFC validation pipeline D1-D5.
 
 #include "sfc/validation.h"
 #include "sfc/blake3_hash.h"
@@ -67,7 +67,7 @@ VoidResult validate_chunk_hash(const ParsedChunk& chunk) {
 }
 
 VoidResult validate_chunk_payload_length(const ParsedChunk& chunk, uint32_t s) {
-    // D3c: compressed payload length MUST NOT exceed 2*S (§17.3).
+    // D3c: compressed payload length MUST NOT exceed 2*S (Section 17.3).
     const uint64_t max_len = static_cast<uint64_t>(s) * 2;
     if (chunk.header.compressed_payload_len > max_len) {
         return std::unexpected(SfcError{
@@ -106,7 +106,7 @@ VoidResult validate_chunk_index(const ParsedChunk& chunk, const GlobalHeader& hd
 }
 
 VoidResult validate_chunk_algo(const ParsedChunk& chunk, const GlobalHeader& hdr) {
-    // D4d: algorithm IDs must match exactly (§5.1).
+    // D4d: algorithm IDs must match exactly (Section 5.1).
     if (chunk.header.compression_algo != hdr.compression_algo) {
         return std::unexpected(SfcError{
             ErrorCode::ChunkAlgoMismatch,

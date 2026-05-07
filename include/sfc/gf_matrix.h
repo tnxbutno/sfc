@@ -16,7 +16,7 @@
 namespace sfc::gf {
 
 // ---------------------------------------------------------------------------
-// GfMatrix — dense matrix over GF(2^16)
+// GfMatrix - dense matrix over GF(2^16)
 // ---------------------------------------------------------------------------
 
 /// Dense matrix of GF(2^16) elements stored in row-major order.
@@ -37,7 +37,7 @@ struct GfMatrix {
 /// @return Zero matrix of the given dimensions.
 [[nodiscard]] GfMatrix make_zero_matrix(uint32_t rows, uint32_t cols);
 
-/// @brief Create an n×n identity matrix over GF(2^16).
+/// @brief Create an nxn identity matrix over GF(2^16).
 /// @param n Dimension.
 /// @return Identity matrix where diag = 1, off-diag = 0.
 [[nodiscard]] GfMatrix make_identity(uint32_t n);
@@ -66,9 +66,9 @@ struct GfMatrix {
 // ---------------------------------------------------------------------------
 
 /// @brief Multiply two matrices over GF(2^16).
-/// @param a Left matrix  (a.rows × a.cols).
-/// @param b Right matrix (b.rows × b.cols). a.cols must equal b.rows.
-/// @return Product matrix (a.rows × b.cols).
+/// @param a Left matrix  (a.rows x a.cols).
+/// @param b Right matrix (b.rows x b.cols). a.cols must equal b.rows.
+/// @return Product matrix (a.rows x b.cols).
 [[nodiscard]] GfMatrix mat_mul(const GfMatrix& a, const GfMatrix& b);
 
 /// @brief Invert a square matrix over GF(2^16) using Gauss-Jordan elimination.

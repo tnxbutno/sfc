@@ -126,10 +126,10 @@ Result<std::vector<uint8_t>> serialize_global_header(const GlobalHeader& hdr) {
     var_part.insert(var_part.end(), tlv_bytes.begin(), tlv_bytes.end());
 
     // H = fixed body (331 bytes from UUID onwards) + var_part.
-    // Fixed body (UUID→priority_count) = 335 - 4 = 331 bytes.
+    // Fixed body (UUID->priority_count) = 335 - 4 = 331 bytes.
     const uint32_t h = static_cast<uint32_t>(kGlobalHeaderFixedBodySize + var_part.size());
 
-    // §4.5 rule g: H must not exceed 65,536 bytes.
+    // Section 4.5 rule g: H must not exceed 65,536 bytes.
     if (h > limits::kMaxHeaderLength) {
         return std::unexpected(SfcError{
             ErrorCode::HeaderLengthOutOfBounds,
@@ -187,7 +187,7 @@ Result<std::vector<uint8_t>> serialize_global_header(const GlobalHeader& hdr) {
 }
 
 VoidResult validate_global_header(const GlobalHeader& hdr) {
-    // §4.6: Flags bits 1-3 are permanently reserved; MUST be zero.
+    // Section 4.6: Flags bits 1-3 are permanently reserved; MUST be zero.
     constexpr uint16_t kReservedFlagsMask = 0b0000'0000'0000'1110u;
     if (hdr.flags & kReservedFlagsMask) {
         return std::unexpected(SfcError{
@@ -195,21 +195,21 @@ VoidResult validate_global_header(const GlobalHeader& hdr) {
             std::format("Flags bits 1-3 must be zero; got flags=0x{:04X}", hdr.flags)
         });
     }
-    // Inner File Size ≤ 1 TB (§17.3).
+    // Inner File Size <= 1 TB (Section 17.3).
     if (hdr.inner_file_size > limits::kMaxInnerFileSize) {
         return std::unexpected(SfcError{
             ErrorCode::FieldAboveMaximum,
             std::format("inner_file_size={} > 1 TiB limit", hdr.inner_file_size)
         });
     }
-    // S must be even (§6.4).
+    // S must be even (Section 6.4).
     if (hdr.s % 2 != 0) {
         return std::unexpected(SfcError{
             ErrorCode::OddChunkSizeS,
             std::format("S={} is odd", hdr.s)
         });
     }
-    // S minimum (§17.3).
+    // S minimum (Section 17.3).
     if (hdr.s < limits::kMinChunkSize) {
         return std::unexpected(SfcError{
             ErrorCode::FieldBelowMinimum,
@@ -229,7 +229,7 @@ VoidResult validate_global_header(const GlobalHeader& hdr) {
             ErrorCode::FieldBelowMinimum, "N=0 is not allowed"
         });
     }
-    // N ≤ 65534 and M ≤ 65534 (individual limits, §17.3).
+    // N <= 65534 and M <= 65534 (individual limits, Section 17.3).
     if (hdr.n > limits::kMaxDataChunkCount) {
         return std::unexpected(SfcError{
             ErrorCode::FieldAboveMaximum,
@@ -242,42 +242,42 @@ VoidResult validate_global_header(const GlobalHeader& hdr) {
             std::format("M={} > maximum {}", hdr.m, limits::kMaxRecoveryChunkCount)
         });
     }
-    // N+M ≤ 65535.
+    // N+M <= 65535.
     if (static_cast<uint64_t>(hdr.n) + hdr.m > limits::kMaxTotalChunkCount) {
         return std::unexpected(SfcError{
             ErrorCode::FieldAboveMaximum,
             std::format("N+M={} exceeds maximum 65535", (uint64_t)hdr.n + hdr.m)
         });
     }
-    // Erasure 0x00 with M>0 (§6.1).
+    // Erasure 0x00 with M>0 (Section 6.1).
     if (hdr.erasure_algo == 0x00 && hdr.m > 0) {
         return std::unexpected(SfcError{
             ErrorCode::ErasureNoneWithMGreaterZero,
             "erasure algo 0x00 but M>0"
         });
     }
-    // Non-zero erasure algo with M=0 (§6.1).
+    // Non-zero erasure algo with M=0 (Section 6.1).
     if (hdr.erasure_algo != 0x00 && hdr.m == 0) {
         return std::unexpected(SfcError{
             ErrorCode::NonZeroErasureAlgoWithMZero,
             std::format("erasure algo 0x{:02X} but M=0", hdr.erasure_algo)
         });
     }
-    // inner_file_size == 0 requires N == 1 (§17.3).
+    // inner_file_size == 0 requires N == 1 (Section 17.3).
     if (hdr.inner_file_size == 0 && hdr.n != 1) {
         return std::unexpected(SfcError{
             ErrorCode::InnerFileSizeZeroWithNNot1,
             std::format("inner_file_size=0 but N={}", hdr.n)
         });
     }
-    // Priority count ≤ N (§4.5 rule a).
+    // Priority count <= N (Section 4.5 rule a).
     if (hdr.priority_count > hdr.n) {
         return std::unexpected(SfcError{
             ErrorCode::PriorityCountExceedsN,
             std::format("P={} > N={}", hdr.priority_count, hdr.n)
         });
     }
-    // Priority indices in range [0, N-1] and no duplicates (§4.5 rules b, c).
+    // Priority indices in range [0, N-1] and no duplicates (Section 4.5 rules b, c).
     std::vector<bool> seen(hdr.n, false);
     for (uint32_t idx : hdr.priority_list) {
         if (idx >= hdr.n) {
@@ -294,20 +294,20 @@ VoidResult validate_global_header(const GlobalHeader& hdr) {
         }
         seen[idx] = true;
     }
-    // Profile TLV tags must only appear when the corresponding flag bit is set (§3.2).
+    // Profile TLV tags must only appear when the corresponding flag bit is set (Section 3.2).
     for (const auto& tlv : hdr.tlv_fields) {
         if (tlv.tag == TlvTag::kChunkOffsetIndex &&
             !(hdr.flags & (1u << static_cast<uint16_t>(FlagBit::HttpProfile)))) {
             return std::unexpected(SfcError{
                 ErrorCode::ProfileTlvWithoutBit,
-                "kChunkOffsetIndex TLV present but HTTP delivery profile (P3) flag bit not set"
+                "chunk offset index metadata present but HTTP delivery flag not set"
             });
         }
         if (tlv.tag == TlvTag::kOriginalFormatId &&
             !(hdr.flags & (1u << static_cast<uint16_t>(FlagBit::PreprocessProfile)))) {
             return std::unexpected(SfcError{
                 ErrorCode::ProfileTlvWithoutBit,
-                "kOriginalFormatId TLV present but preprocessing profile (P4) flag bit not set"
+                "original format metadata present but preprocessing flag not set"
             });
         }
     }

@@ -1,5 +1,5 @@
 /// @file test_directory.cpp
-/// @brief Tests for directory profile (P5, §16): encode_directory, extract_directory_full,
+/// @brief Tests for directory profile (P5, Section 16): encode_directory, extract_directory_full,
 ///        extract_directory_partial.
 
 #include "sfc/directory.h"
@@ -52,7 +52,7 @@ static DirectoryInputFile make_file(const std::string& path,
 }
 
 // ===========================================================================
-// encode_directory — path validation
+// encode_directory - path validation
 // ===========================================================================
 
 TEST(EncodeDirectory, EmptyPath_Error) {
@@ -123,7 +123,7 @@ TEST(EncodeDirectory, ValidNestedPath_OK) {
 }
 
 TEST(EncodeDirectory, EmptyFileList_Rejected) {
-    // F >= 1 is required by §16.2; empty directory must be rejected.
+    // F >= 1 is required by Section 16.2; empty directory must be rejected.
     auto p = make_params(CompressionAlgo::Identity, 64, 0, 0x09);
     std::vector<DirectoryInputFile> files;
     auto res = encode_directory(std::move(files), p);
@@ -132,7 +132,7 @@ TEST(EncodeDirectory, EmptyFileList_Rejected) {
 }
 
 // ===========================================================================
-// encode_directory → decode() → extract_directory_full — round-trips
+// encode_directory -> decode() -> extract_directory_full - round-trips
 // ===========================================================================
 
 TEST(P5RoundTrip, SingleFile) {
@@ -273,7 +273,7 @@ TEST(P5RoundTrip, InnerFormatIdIsOverridden) {
 
     // Inner Format ID (at fixed file offset 36, LE uint16) must be 0x0050.
     // File layout: preamble(8) + H(4) + UUID(16) + inner_file_size(8) + format_id(2)
-    // → format_id at offset 36.
+    // -> format_id at offset 36.
     ASSERT_GE(enc->size(), 38u);
     uint16_t fid = static_cast<uint16_t>((*enc)[36])
                  | (static_cast<uint16_t>((*enc)[37]) << 8);
@@ -281,7 +281,7 @@ TEST(P5RoundTrip, InnerFormatIdIsOverridden) {
 }
 
 // ===========================================================================
-// extract_directory_full — error cases
+// extract_directory_full - error cases
 // ===========================================================================
 
 TEST(ExtractDirectoryFull, TooSmall_Error) {

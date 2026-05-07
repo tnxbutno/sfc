@@ -4,8 +4,8 @@
 /// Encoding pipeline:
 ///   1. Validate params (S even, filename fits, etc.)
 ///   2. Split content into N data blocks (last zero-padded to S bytes)
-///   3. Compress each block independently (§7.3)
-///   4. RS-encode to produce M recovery blocks, then compress each (§6.4)
+///   3. Compress each block independently (Section 7.3)
+///   4. RS-encode to produce M recovery blocks, then compress each (Section 6.4)
 ///   5. Build GlobalHeader + compute Trailer hash
 ///   6. Assemble preamble + header + chunks + trailer into one buffer
 
@@ -30,7 +30,7 @@ namespace sfc {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-/// Compute the image profile (P1) priority list per §12.4.
+/// Compute the image profile (P1) priority list per Section 12.4.
 /// Returns error for Class P without a caller-supplied list.
 /// Returns auto-computed list for Class S (JPEG Baseline).
 /// Returns override_list unchanged if non-empty.
@@ -38,7 +38,7 @@ namespace sfc {
 static Result<std::vector<uint32_t>>
 resolve_p1_priority(uint16_t format_id, uint32_t n,
                     const std::vector<uint32_t>& override_list, bool p1_flag) {
-    if (!p1_flag) return override_list;  // image profile (P1) not declared — use whatever caller gave (may be empty)
+    if (!p1_flag) return override_list;  // image profile (P1) not declared - use whatever caller gave (may be empty)
 
     if (!override_list.empty()) return override_list;  // explicit override wins
 
@@ -48,7 +48,7 @@ resolve_p1_priority(uint16_t format_id, uint32_t n,
         // Class P: codestream inspection required; caller MUST supply priority_list.
         return std::unexpected(SfcError{
             ErrorCode::ProfileMustViolation,
-            "image profile (P1) Class P format (JPEG 2000/XL): priority_list must be provided (§12.4)"
+            "JPEG 2000/JPEG XL input requires priority_list when image profile is enabled"
         });
     }
 
@@ -110,7 +110,7 @@ Result<std::vector<uint8_t>> encode(std::span<const uint8_t> content,
             "filename too long (max 254 bytes)"
         });
     }
-    // Filename must not contain forbidden bytes: 0x00-0x1F, '/', '\\' (§4.8).
+    // Filename must not contain forbidden bytes: 0x00-0x1F, '/', '\\' (Section 4.8).
     for (char c : params.filename) {
         const auto b = static_cast<uint8_t>(c);
         if (b <= 0x1F || b == 0x2F || b == 0x5C) {
@@ -120,7 +120,7 @@ Result<std::vector<uint8_t>> encode(std::span<const uint8_t> content,
             });
         }
     }
-    // Reserved flag bits 1-3 and 9-15 must be zero (§4.6).
+    // Reserved flag bits 1-3 and 9-15 must be zero (Section 4.6).
     constexpr uint16_t kReservedFlagMask = 0b1111111000001110u;  // bits 1-3, 9-15
     if (params.flags & kReservedFlagMask) {
         return std::unexpected(SfcError{
@@ -169,7 +169,7 @@ Result<std::vector<uint8_t>> encode(std::span<const uint8_t> content,
     // --- RS-encode to produce M recovery blocks, then compress ---
     std::vector<std::vector<uint8_t>> recovery_payloads;
     if (params.m > 0) {
-        // RS encoding operates on uncompressed blocks (§6.4 ordering: RS before compression).
+        // RS encoding operates on uncompressed blocks (Section 6.4 ordering: RS before compression).
         auto rs_res = rs_encode(data_blocks, params.m);
         if (!rs_res) return std::unexpected(rs_res.error());
 
@@ -193,7 +193,7 @@ Result<std::vector<uint8_t>> encode(std::span<const uint8_t> content,
     ghdr.compression_algo= comp_algo;
     ghdr.flags           = params.flags;  // caller-supplied profile/flag bits
 
-    // Priority list per §12.4.
+    // Priority list per Section 12.4.
     const bool p1_flag = (params.flags & (1u << static_cast<uint16_t>(FlagBit::ImageProfile))) != 0;
     auto prio_res = resolve_p1_priority(params.format_id, n, params.priority_list, p1_flag);
     if (!prio_res) return std::unexpected(prio_res.error());

@@ -10,7 +10,7 @@
 namespace sfc::gf {
 
 // ---------------------------------------------------------------------------
-// Internal helpers (not in the header — implementation-private)
+// Internal helpers (not in the header - implementation-private)
 // ---------------------------------------------------------------------------
 
 /// Return a reference to element (r,c) in m (mutable helper for inversion).
@@ -57,7 +57,7 @@ GfMatrix mat_set(GfMatrix m, uint32_t r, uint32_t c, uint16_t val) {
 GfMatrix mat_mul(const GfMatrix& a, const GfMatrix& b) {
     assert(a.cols == b.rows && "mat_mul: inner dimensions must match");
 
-    // Result is (a.rows × b.cols), initialised to zero.
+    // Result is (a.rows x b.cols), initialised to zero.
     GfMatrix result = make_zero_matrix(a.rows, b.cols);
 
     for (uint32_t r = 0; r < a.rows; ++r) {
@@ -75,7 +75,7 @@ GfMatrix mat_mul(const GfMatrix& a, const GfMatrix& b) {
 }
 
 // ---------------------------------------------------------------------------
-// Matrix inversion — Gauss-Jordan elimination over GF(2^16)
+// Matrix inversion - Gauss-Jordan elimination over GF(2^16)
 // ---------------------------------------------------------------------------
 
 Result<GfMatrix> mat_inv(const GfMatrix& m) {
@@ -89,7 +89,7 @@ Result<GfMatrix> mat_inv(const GfMatrix& m) {
 
     const uint32_t n = m.rows;
 
-    // Build augmented matrix [m | I] of size n × 2n.
+    // Build augmented matrix [m | I] of size n x 2n.
     // We will transform it to [I | m^-1] via row operations.
     GfMatrix aug = make_zero_matrix(n, 2 * n);
 
@@ -118,7 +118,7 @@ Result<GfMatrix> mat_inv(const GfMatrix& m) {
         }
 
         if (pivot_row == n) {
-            // No non-zero pivot → matrix is singular.
+            // No non-zero pivot -> matrix is singular.
             return std::unexpected(SfcError{
                 ErrorCode::MatrixSingular,
                 std::format("mat_inv: singular matrix, zero pivot at col {}", col)

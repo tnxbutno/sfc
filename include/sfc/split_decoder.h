@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file split_decoder.h
-/// @brief Pure split transport decoder (P2, §13).
+/// @brief Pure split transport decoder (P2, Section 13).
 ///
 /// decode_split merges chunks from multiple carrier segments and runs the
 /// standard decode pipeline.  decode_multi auto-groups files by UUID.

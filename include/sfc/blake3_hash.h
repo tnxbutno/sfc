@@ -7,10 +7,10 @@
 /// All functions are pure (no side effects).
 ///
 /// Usage:
-///   - blake3()        — hash a single byte span
-///   - blake3_concat() — hash two spans as if they were concatenated
+///   - blake3()        - hash a single byte span
+///   - blake3_concat() - hash two spans as if they were concatenated
 ///                       (used for per-chunk integrity: header || payload)
-///   - blake3_verify() — constant-time comparison against an expected hash
+///   - blake3_verify() - constant-time comparison against an expected hash
 
 #include "sfc/error.h"
 

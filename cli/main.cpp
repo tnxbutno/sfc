@@ -1,5 +1,5 @@
 /// @file main.cpp
-/// @brief sfc CLI entry point — command dispatch via CLI11.
+/// @brief sfc CLI entry point - command dispatch via CLI11.
 
 #include "cmd_info.h"
 #include "cmd_pack.h"
@@ -17,18 +17,18 @@ int main(int argc, char** argv) {
     app.set_help_flag("-h,--help", "Show help and exit");
     app.set_version_flag("--version", "sfc 0.1.0");
 
-    // ── Core commands ─────────────────────────────────────────────────────────
+    // -- Core commands ---------------------------------------------------------
     setup_pack(app);
     setup_unpack(app);
     setup_info(app);
     setup_verify(app);
     setup_repair(app);
 
-    // ── version subcommand ────────────────────────────────────────────────────
+    // -- version subcommand ----------------------------------------------------
     app.add_subcommand("version", "Print version and exit")
         ->callback([] { std::println("sfc 0.1.0"); });
 
-    // ── help subcommand ───────────────────────────────────────────────────────
+    // -- help subcommand -------------------------------------------------------
     std::string help_topic;
     auto* help_cmd = app.add_subcommand("help", "Show help for a command");
     help_cmd->add_option("command", help_topic, "Command name")->required(false);
@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
         }
     });
 
-    // ── Parse ─────────────────────────────────────────────────────────────────
+    // -- Parse -----------------------------------------------------------------
     try {
         app.parse(argc, argv);
     } catch (const CLI::ParseError& e) {

@@ -30,7 +30,7 @@ Result<std::vector<TlvField>> parse_tlv_fields(std::span<const uint8_t> data) {
             std::span<const uint8_t, 4>{data.data() + pos + 2, 4});
         pos += 6;
 
-        // TLV value length ≤ 16,384 (§3.2 rule e).
+        // TLV value length <= 16,384 (Section 3.2 rule e).
         if (len > limits::kMaxTlvValueLength) {
             return std::unexpected(SfcError{
                 ErrorCode::FieldAboveMaximum,
@@ -69,7 +69,7 @@ Result<std::vector<TlvField>> parse_tlv_fields(std::span<const uint8_t> data) {
                     std::format("kChunkOffsetIndex: length {} is not a multiple of 8", len)
                 });
             }
-            // Metadata string tags: L=0 and L>4096 are both format errors (§3.2).
+            // Metadata string tags: L=0 and L>4096 are both format errors (Section 3.2).
             const bool is_metadata_tag =
                 tag == TlvTag::kAuthor      || tag == TlvTag::kDescription ||
                 tag == TlvTag::kLocation    || tag == TlvTag::kSoftware    ||

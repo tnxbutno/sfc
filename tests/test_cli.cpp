@@ -1,5 +1,5 @@
 /// @file test_cli.cpp
-/// @brief End-to-end integration tests — exercises every sfc CLI command using
+/// @brief End-to-end integration tests - exercises every sfc CLI command using
 ///        real file I/O and the compiled binary.
 
 #include <gtest/gtest.h>
@@ -205,11 +205,11 @@ TEST_F(CliTest, HelpFlagOnSubcommand) {
 }
 
 // ===========================================================================
-// pack — basic file output
+// pack - basic file output
 // ===========================================================================
 
 TEST_F(CliTest, PackDefaultOutputPath) {
-    // "input.txt" → "input.sfc" in the same directory.
+    // "input.txt" -> "input.sfc" in the same directory.
     const auto src = make_file("input.txt", "hello sfc");
     auto r = sfc({"pack", src.string()});
     EXPECT_EQ(r.exit_code, 0);
@@ -239,7 +239,7 @@ TEST_F(CliTest, PackEmptyFile) {
 }
 
 // ===========================================================================
-// pack → unpack round-trip: single file, various algos
+// pack -> unpack round-trip: single file, various algos
 // ===========================================================================
 
 TEST_F(CliTest, RoundTrip_Zstd) {
@@ -297,7 +297,7 @@ TEST_F(CliTest, RoundTrip_EmptyContent) {
 }
 
 TEST_F(CliTest, RoundTrip_LargeFile) {
-    // 512 KB — exercises multi-chunk behaviour.
+    // 512 KB - exercises multi-chunk behaviour.
     const auto content  = iota_bytes(512 * 1024);
     const auto src      = make_file("large.bin", content);
     const auto packed   = p("large.sfc");
@@ -383,6 +383,13 @@ TEST_F(CliTest, InfoMissingFile) {
     EXPECT_NE(r.exit_code, 0);
 }
 
+TEST_F(CliTest, InfoInvalidMagic) {
+    const auto garbage = make_file("bad-info.sfc", iota_bytes(512));
+    auto r = sfc({"info", garbage.string()});
+    EXPECT_NE(r.exit_code, 0);
+    EXPECT_NE(r.err.find("magic"), std::string::npos);
+}
+
 // ===========================================================================
 // verify
 // ===========================================================================
@@ -404,7 +411,7 @@ TEST_F(CliTest, VerifyCorruptFile) {
     const auto packed  = p("data.sfc");
     ASSERT_EQ(sfc({"pack", src.string(), "-o", packed.string(), "--algo", "none"}).exit_code, 0);
 
-    // Flip a byte at offset 512 — well inside the chunk payload region.
+    // Flip a byte at offset 512 - well inside the chunk payload region.
     {
         std::fstream f(packed, std::ios::in | std::ios::out | std::ios::binary);
         f.seekp(512);
@@ -423,13 +430,20 @@ TEST_F(CliTest, VerifyMissingFile) {
     EXPECT_NE(r.exit_code, 0);
 }
 
+TEST_F(CliTest, VerifyInvalidMagic) {
+    const auto garbage = make_file("bad-verify.sfc", iota_bytes(512));
+    auto r = sfc({"verify", garbage.string()});
+    EXPECT_NE(r.exit_code, 0);
+    EXPECT_NE(r.out.find("FAIL"), std::string::npos);
+}
+
 // ===========================================================================
 // Split transport: pack -n, segment naming, verify, unpack with RS recovery
 // ===========================================================================
 
 TEST_F(CliTest, SplitSegmentNaming) {
-    // 3 segments → base-01.sfc, base-02.sfc, base-03.sfc.
-    // Use s=1024 so 3000 bytes → 3 data chunks → 3 segments (no capping).
+    // 3 segments -> base-01.sfc, base-02.sfc, base-03.sfc.
+    // Use s=1024 so 3000 bytes -> 3 data chunks -> 3 segments (no capping).
     const auto src = make_file("data.bin", iota_bytes(3000));
     const auto out = p("archive.sfc");
     ASSERT_EQ(sfc({"pack", src.string(), "-o", out.string(), "-n", "3", "-s", "1024"}).exit_code, 0);
@@ -441,7 +455,7 @@ TEST_F(CliTest, SplitSegmentNaming) {
 }
 
 TEST_F(CliTest, SplitVerifyAllSegments) {
-    // 4096 bytes / s=1024 = 4 data chunks + M=1 parity = 5 total → n=5 segments (1 chunk each).
+    // 4096 bytes / s=1024 = 4 data chunks + M=1 parity = 5 total -> n=5 segments (1 chunk each).
     const auto src = make_file("data.bin", iota_bytes(4096));
     const auto out = p("split.sfc");
     ASSERT_EQ(sfc({"pack", src.string(), "-o", out.string(),
@@ -495,14 +509,14 @@ TEST_F(CliTest, SplitRSRecovery_DropOneWithinBudget) {
 }
 
 TEST_F(CliTest, SplitRSRecovery_DropTwoExceedsBudget) {
-    // M=1 → can only recover 1 loss. Dropping 2 segments (= 2 chunks) must fail.
+    // M=1 -> can only recover 1 loss. Dropping 2 segments (= 2 chunks) must fail.
     const auto content = iota_bytes(4096);
     const auto src     = make_file("data.bin", content);
     const auto out     = p("rs2.sfc");
     ASSERT_EQ(sfc({"pack", src.string(), "-o", out.string(),
                    "-n", "5", "-m", "1", "-s", "1024", "--algo", "none"}).exit_code, 0);
 
-    // Provide only 3 of 5 segments → 2 chunks missing, exceeds M=1.
+    // Provide only 3 of 5 segments -> 2 chunks missing, exceeds M=1.
     // verify reports degraded (exit 2); unpack refuses partial (exit 1).
     auto rv = sfc({"verify",
                    p("rs2-01.sfc").string(),
@@ -665,7 +679,7 @@ TEST_F(CliTest, AutoDiscover_UnpackFromOneSegment) {
     ASSERT_EQ(sfc({"pack", src.string(), "-o", out.string(),
                    "-n", "5", "-m", "1", "-s", "1024", "--algo", "none"}).exit_code, 0);
 
-    // Pass only segment 01 — tool should discover 02–05 automatically.
+    // Pass only segment 01 - tool should discover 02-05 automatically.
     ASSERT_EQ(sfc({"unpack", p("arc-01.sfc").string(),
                    "-o", unpacked.string()}).exit_code, 0);
     EXPECT_EQ(slurp_bytes(unpacked), content);
@@ -703,7 +717,7 @@ TEST_F(CliTest, AutoDiscover_NoTriggerForRegularFile) {
     const auto packed = p("solo.sfc");
     ASSERT_EQ(sfc({"pack", src.string(), "-o", packed.string()}).exit_code, 0);
 
-    // verify should work normally — no "discovered" message, exit 0.
+    // verify should work normally - no "discovered" message, exit 0.
     auto r = sfc({"verify", packed.string()});
     EXPECT_EQ(r.exit_code, 0);
     EXPECT_EQ(r.err.find("discovered"), std::string::npos);
@@ -719,7 +733,7 @@ TEST_F(CliTest, AutoDiscover_MultipleInputsNotTriggered) {
     ASSERT_EQ(sfc({"pack", src.string(), "-o", out.string(),
                    "-n", "5", "-m", "1", "-s", "1024", "--algo", "none"}).exit_code, 0);
 
-    // Pass all 5 explicitly — no discovery message expected.
+    // Pass all 5 explicitly - no discovery message expected.
     auto r = sfc({"unpack",
                   p("arc-01.sfc").string(), p("arc-02.sfc").string(),
                   p("arc-03.sfc").string(), p("arc-04.sfc").string(),
@@ -765,7 +779,7 @@ TEST_F(CliTest, PackBadAlgo) {
 }
 
 TEST_F(CliTest, UnpackNotAnSfcFile) {
-    // Feed random garbage — decoder must report an error, not crash.
+    // Feed random garbage - decoder must report an error, not crash.
     const auto garbage = make_file("garbage.sfc", iota_bytes(512));
     auto r = sfc({"unpack", garbage.string(), "-o", p("out.bin").string()});
     EXPECT_NE(r.exit_code, 0);

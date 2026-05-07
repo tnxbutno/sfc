@@ -20,7 +20,7 @@
 namespace sfc {
 
 // ---------------------------------------------------------------------------
-// Utility: block ↔ word conversion
+// Utility: block <-> word conversion
 // ---------------------------------------------------------------------------
 
 /// @brief Convert an S-byte block to S/2 GF(2^16) words (uint16 LE pairs).
@@ -37,14 +37,14 @@ namespace sfc {
 // Cauchy matrix
 // ---------------------------------------------------------------------------
 
-/// @brief Build the Cauchy generator matrix C (M×N) over GF(2^16).
+/// @brief Build the Cauchy generator matrix C (MxN) over GF(2^16).
 ///
 /// C[i][j] = gf_inv(i XOR (M + j))  for i in [0,M), j in [0,N).
-/// This is the ONLY conforming construction per SFC spec §6.4.
+/// This is the ONLY conforming construction per SFC spec Section 6.4.
 ///
 /// @param n Number of data chunks (columns).
 /// @param m Number of recovery chunks (rows).
-/// @return M×N Cauchy matrix.
+/// @return MxN Cauchy matrix.
 [[nodiscard]] gf::GfMatrix build_cauchy_matrix(uint32_t n, uint32_t m);
 
 // ---------------------------------------------------------------------------
@@ -54,7 +54,7 @@ namespace sfc {
 /// @brief Encode N data blocks into M recovery blocks using Reed-Solomon.
 ///
 /// Each block must be exactly S bytes (even). The last data block must already
-/// be zero-padded to S bytes by the caller (per spec §5.2).
+/// be zero-padded to S bytes by the caller (per spec Section 5.2).
 ///
 /// @param data_blocks Vector of N blocks, each exactly S bytes.
 /// @param m           Number of recovery blocks to produce.
@@ -75,7 +75,7 @@ struct RsChunk {
 
 /// @brief Reconstruct all N data blocks from any N available chunks.
 ///
-/// Implements the Gauss-Jordan reconstruction procedure from spec §6.4.
+/// Implements the Gauss-Jordan reconstruction procedure from spec Section 6.4.
 /// Caller must provide exactly N chunks (any mix of data and recovery).
 /// Missing data chunk indices are inferred from which [0,N) indices are absent.
 ///

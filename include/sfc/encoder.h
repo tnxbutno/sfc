@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file encoder.h
-/// @brief Pure SFC encoder — builds a complete .sfc file in memory (§10).
+/// @brief Pure SFC encoder - builds a complete .sfc file in memory (Section 10).
 ///
 /// All functions are pure (no I/O).
 
@@ -30,7 +30,7 @@ struct EncodeParams {
     std::string     filename;    ///< Inner filename (plain name, no path separator).
     uint16_t        flags = 0;   ///< Extra flags for the GlobalHeader (profile bits, etc.).
     FileMetadata    metadata;    ///< Optional user metadata stored in TLV fields.
-    std::vector<uint32_t> priority_list; ///< Priority chunk indices for image profile (P1) Class P formats (§12.4).
+    std::vector<uint32_t> priority_list; ///< Priority chunk indices for image profile (P1) Class P formats (Section 12.4).
                                          ///< For Class S (JPEG Baseline), auto-computed if empty.
 };
 
@@ -40,7 +40,7 @@ struct EncodeParams {
 
 /// @brief Compute N = ceil(inner_file_size / s).
 ///
-/// Exception per §10.1: if inner_file_size == 0, returns 1.
+/// Exception per Section 10.1: if inner_file_size == 0, returns 1.
 ///
 /// @param inner_file_size Total inner content byte count.
 /// @param s               Nominal chunk size (must be > 0).

@@ -1,5 +1,5 @@
 /// @file cmd_unpack.cpp
-/// @brief `sfc unpack` — SFC container(s) → file or directory.
+/// @brief `sfc unpack` - SFC container(s) -> file or directory.
 
 #include "cmd_unpack.h"
 #include "utils.h"
@@ -34,7 +34,7 @@ void setup_unpack(CLI::App& app) {
         "Output file or directory (default: stdout for files, cwd for directories)");
 
     cmd->callback([opts] {
-        // ── Auto-discover split-transport siblings when only one file is given ──
+        // -- Auto-discover split-transport siblings when only one file is given --
         if (opts->inputs.size() == 1) {
             auto siblings = cli::discover_split_siblings(opts->inputs[0]);
             if (siblings.size() > 1) {
@@ -44,7 +44,7 @@ void setup_unpack(CLI::App& app) {
             }
         }
 
-        // ── Load all input files ──────────────────────────────────────────
+        // -- Load all input files ------------------------------------------
         std::vector<std::vector<uint8_t>> file_data;
         file_data.reserve(opts->inputs.size());
         for (const auto& path : opts->inputs) {
@@ -56,14 +56,14 @@ void setup_unpack(CLI::App& app) {
             }
         }
 
-        // ── Build UUID → header map for profile detection ─────────────────
+        // -- Build UUID -> header map for profile detection -----------------
         std::unordered_map<sfc::FileUuid, sfc::GlobalHeader> hdr_map;
         for (const auto& data : file_data) {
             auto hdr = cli::parse_header_from_file(data);
             if (hdr) hdr_map[hdr->uuid] = *hdr;
         }
 
-        // ── Decode ────────────────────────────────────────────────────────
+        // -- Decode --------------------------------------------------------
         auto results = sfc::decode_multi(std::span{file_data});
         if (!results) {
             std::println(stderr, "sfc unpack: {}", results.error().detail);
@@ -73,7 +73,7 @@ void setup_unpack(CLI::App& app) {
         const std::string out_dir = opts->output.empty() ? "." : opts->output;
 
         for (const auto& entry : *results) {
-            // Reject partial reassembly — use `repair` for that.
+            // Reject partial reassembly - use `repair` for that.
             if (entry.result.status == sfc::ReassemblyStatus::Partial) {
                 std::println(stderr,
                     "sfc unpack: UUID {} — partial reassembly. "
@@ -82,7 +82,7 @@ void setup_unpack(CLI::App& app) {
                 std::exit(1);
             }
 
-            // ── Detect directory profile ───────────────────────────────────
+            // -- Detect directory profile -----------------------------------
             const bool is_directory_profile = [&] {
                 auto it = hdr_map.find(entry.uuid);
                 if (it == hdr_map.end()) return false;
@@ -91,7 +91,7 @@ void setup_unpack(CLI::App& app) {
             }();
 
             if (is_directory_profile) {
-                // ── Directory: extract all files ───────────────────────────
+                // -- Directory: extract all files ---------------------------
                 auto dir = sfc::extract_directory_full(
                     std::span{entry.result.content});
                 if (!dir) {
@@ -106,7 +106,7 @@ void setup_unpack(CLI::App& app) {
                     const std::filesystem::path dest_path =
                         std::filesystem::weakly_canonical(
                             std::filesystem::path(out_dir) / f.path);
-                    // Reject paths that escape the output directory (§4.8 rule d).
+                    // Reject paths that escape the output directory (Section 4.8 rule d).
                     const std::string dest_str = dest_path.string();
                     const auto rel = dest_path.lexically_relative(canonical_root);
                     if (rel.empty() || *rel.begin() == "..") {
@@ -123,7 +123,7 @@ void setup_unpack(CLI::App& app) {
                     }
                 }
             } else {
-                // ── Regular file ──────────────────────────────────────────
+                // -- Regular file ------------------------------------------
                 if (opts->output.empty()) {
                     cli::write_stdout(entry.result.content);
                 } else {
@@ -134,7 +134,7 @@ void setup_unpack(CLI::App& app) {
                         const auto& raw = it->second.inner_filename;
                         const auto end = std::find(raw.begin(), raw.end(), uint8_t{0});
                         std::string name(raw.begin(), end);
-                        // Strip any directory components — §4.8 forbids '/' and '\'
+                        // Strip any directory components - Section 4.8 forbids '/' and '\'
                         // in inner_filename, but an adversarial encoder could violate this.
                         name = std::filesystem::path(name).filename().string();
                         return name.empty() ? cli::format_uuid(entry.uuid) : name;

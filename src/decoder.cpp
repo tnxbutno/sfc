@@ -1,5 +1,5 @@
 /// @file decoder.cpp
-/// @brief SFC decoder — full validation and reassembly pipeline.
+/// @brief SFC decoder - full validation and reassembly pipeline.
 
 #include "sfc/decoder.h"
 
@@ -38,9 +38,9 @@ static FileMetadata extract_metadata(const GlobalHeader& hdr) {
 }
 
 Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
-    // -----------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // D1: Preamble (8 bytes)
-    // -----------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     if (file_bytes.size() < 8) {
         return std::unexpected(SfcError{
             ErrorCode::InvalidMagic, "file too small for preamble"
@@ -52,9 +52,9 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
         if (!preamble_res) return std::unexpected(preamble_res.error());
     }
 
-    // -----------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // D2a: Read H field and parse Global Header Region
-    // -----------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     if (file_bytes.size() < 12) {  // 8 preamble + 4 H field
         return std::unexpected(SfcError{
             ErrorCode::HeaderLengthOutOfBounds, "file too small to read H"
@@ -64,7 +64,7 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
     uint32_t H = read_u32_le(
         std::span<const uint8_t, 4>{file_bytes.data() + 8, 4});
 
-    // Bounds-check H (§18.3): limits apply to the H field value, not the region size.
+    // Bounds-check H (Section 18.3): limits apply to the H field value, not the region size.
     // Total region size = H+4; maximum allocatable buffer = 65,540 bytes.
     if (H < limits::kMinHeaderLength || H > limits::kMaxHeaderLength) {
         return std::unexpected(SfcError{
@@ -92,22 +92,22 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
     auto val_res = validate_global_header(hdr);
     if (!val_res) return std::unexpected(val_res.error());
 
-    // D2b-extra: split transport (P2) and HTTP delivery (P3) profiles are mutually exclusive (§13.6).
+    // D2b-extra: split transport (P2) and HTTP delivery (P3) profiles are mutually exclusive (Section 13.6).
     const bool has_split_profile = (hdr.flags & (1u << static_cast<uint16_t>(FlagBit::SplitProfile))) != 0;
     const bool has_http_profile  = (hdr.flags & (1u << static_cast<uint16_t>(FlagBit::HttpProfile)))  != 0;
     if (has_split_profile && has_http_profile) {
         return std::unexpected(SfcError{
             ErrorCode::SplitAndHttpProfilesBothSet,
-            "split transport (P2) and HTTP delivery (P3) profile flags both set"
+            "split transport and HTTP delivery flags cannot both be set"
         });
     }
-    // D2b-extra: SPLIT_TRANSPORT bit (0) set without split transport profile bit (P2, bit 5) is a format error (§9.4).
+    // D2b-extra: SPLIT_TRANSPORT bit (0) set without split transport profile bit (P2, bit 5) is a format error (Section 9.4).
     const bool has_split_transport =
         (hdr.flags & (1u << static_cast<uint16_t>(FlagBit::SplitTransport))) != 0;
     if (has_split_transport && !has_split_profile) {
         return std::unexpected(SfcError{
             ErrorCode::SplitTransportWithoutSplitProfile,
-            "SPLIT_TRANSPORT bit (0) set without split transport profile bit (P2, bit 5)"
+            "split transport container is missing the required split profile flag"
         });
     }
 
@@ -120,9 +120,9 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
         });
     }
 
-    // -----------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // D2c: Check for Trailer and verify its hash
-    // -----------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // The Trailer (64 bytes) is the last 64 bytes of the file.
     bool trailer_verified = false;
     if (file_bytes.size() >= 64) {
@@ -135,21 +135,21 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
             if (th_res) {
                 trailer_verified = true;
             } else {
-                // Trailer present but hash failed → hard error.
+                // Trailer present but hash failed -> hard error.
                 return std::unexpected(th_res.error());
             }
         }
         // If trailer_res is an error (magic wrong / reserved bytes non-zero),
-        // the last 64 bytes are simply the last chunk's trailer — that is fine
+        // the last 64 bytes are simply the last chunk's trailer - that is fine
         // for non-terminal split-transport segments; for simple files we'll detect at the end.
     }
 
-    // -----------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // D3 + D4: Parse and validate each chunk
-    // -----------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     // Chunks begin immediately after the Global Header Region.
     // For split-transport segments (SPLIT_TRANSPORT set) a 16-byte Segment Header follows
-    // the Global Header Region before the first chunk — skip it.
+    // the Global Header Region before the first chunk - skip it.
     size_t pos = 8 + header_region_size;
     const bool split_transport =
         (hdr.flags & (1u << static_cast<uint16_t>(FlagBit::SplitTransport))) != 0;
@@ -179,7 +179,7 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
             if (chunk_res.error().code == ErrorCode::UnknownChunkType ||
                 chunk_res.error().code == ErrorCode::NonZeroChunkReservedBytes ||
                 chunk_res.error().code == ErrorCode::ChunkEndMarkerInvalid) {
-                // §9.4: chunk-level errors — discard this chunk and continue.
+                // Section 9.4: chunk-level errors - discard this chunk and continue.
                 // Peek payload_len at fixed offset 28 to find the next chunk
                 // boundary (48-byte header + payload + 36-byte trailer).
                 constexpr size_t kHdrSize = 48;
@@ -195,7 +195,7 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
                         continue;
                     }
                 }
-                // Can't determine boundary — treat as truncation and halt.
+                // Can't determine boundary - treat as truncation and halt.
             }
             return std::unexpected(chunk_res.error());
         }
@@ -206,7 +206,7 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
         auto hash_res = validate_chunk_hash(chunk);
         if (!hash_res) continue;  // discard chunk, continue
 
-        // D3c: payload length ≤ 2*S.
+        // D3c: payload length <= 2*S.
         auto len_res = validate_chunk_payload_length(chunk, hdr.s);
         if (!len_res) continue;   // discard chunk
 
@@ -230,12 +230,12 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
     if (!dd_res) return std::unexpected(dd_res.error());
     working_set = std::move(*dd_res);
 
-    // -----------------------------------------------------------------------
-    // D5b/D5c: Decompress + RS reconstruct → obtain N data blocks
-    // -----------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
+    // D5b/D5c: Decompress + RS reconstruct -> obtain N data blocks
+    // ---------------------------------------------------------------------------
     const CompressionAlgo algo = normalize_compression_id(hdr.compression_algo);
 
-    // V = total working-set size; both data and recovery chunks count (§9).
+    // V = total working-set size; both data and recovery chunks count (Section 9).
     const uint32_t v = static_cast<uint32_t>(working_set.size());
 
     if (v >= hdr.n) {
@@ -260,7 +260,7 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
         std::vector<std::vector<uint8_t>> data_blocks(hdr.n);
 
         if (all_data_present && hdr.m == 0) {
-            // No RS needed — just decompress N data chunks.
+            // No RS needed - just decompress N data chunks.
             for (const auto& c : working_set) {
                 if (c.header.chunk_index >= hdr.n) continue;
                 auto dec = decompress(c.payload, algo, hdr.s);
@@ -271,7 +271,7 @@ Result<ReassemblyResult> decode(std::span<const uint8_t> file_bytes) {
             // Need RS reconstruction.
             // Decompress all available chunks into a candidate pool so we can
             // retry with a different N-subset if the initial matrix is singular
-            // (§6.4: discard one recovery chunk and retry).
+            // (Section 6.4: discard one recovery chunk and retry).
             std::vector<RsChunk> candidates;
             candidates.reserve(working_set.size());
             for (const auto& c : working_set) {

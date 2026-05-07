@@ -72,7 +72,7 @@ TEST(Tlv, DuplicateKnownTag_Error) {
 
 TEST(Tlv, ValueOverrun_Error) {
     // Manually craft a TLV whose declared length exceeds the buffer.
-    // tag=0x0002(2B) | length=100(4B) | only 1 byte of value present → overrun.
+    // tag=0x0002(2B) | length=100(4B) | only 1 byte of value present -> overrun.
     std::vector<uint8_t> bytes = {
         0x02, 0x00,              // tag = 0x0002
         0x64, 0x00, 0x00, 0x00, // length = 100
@@ -174,7 +174,7 @@ TEST(GlobalHeader, Validate_InnerFileSizeZero_NNot1_Error) {
 TEST(GlobalHeader, Validate_ErasureNone_MNonZero_Error) {
     auto hdr = make_min_global_header();
     hdr.m            = 2;
-    hdr.erasure_algo = 0x00;  // "none" but M > 0 → invalid
+    hdr.erasure_algo = 0x00;  // "none" but M > 0 -> invalid
     auto res = validate_global_header(hdr);
     ASSERT_FALSE(res.has_value());
     EXPECT_EQ(res.error().code, ErrorCode::ErasureNoneWithMGreaterZero);
@@ -273,7 +273,7 @@ TEST(ChunkTrailer, BadEndMarker_Error) {
 }
 
 // ===========================================================================
-// ParsedChunk — full round-trip via serialize_chunk + parse_chunk
+// ParsedChunk - full round-trip via serialize_chunk + parse_chunk
 // ===========================================================================
 
 TEST(ParsedChunk, RoundTrip_DataChunk) {
@@ -296,7 +296,7 @@ TEST(ParsedChunk, RoundTrip_DataChunk) {
 TEST(ParsedChunk, TruncatedData_Error) {
     auto hdr         = make_test_chunk_header(0);
     auto chunk_bytes = serialize_chunk(hdr, {0xAA});
-    // Provide only part of the bytes — parse should fail.
+    // Provide only part of the bytes - parse should fail.
     auto truncated   = std::vector<uint8_t>(chunk_bytes.begin(),
                                             chunk_bytes.begin() + 40);
     auto res = parse_chunk(truncated);
@@ -430,13 +430,13 @@ TEST(Manifest, RoundTrip_TwoEntries) {
 }
 
 TEST(Manifest, HashIsVerified) {
-    // Corrupt the hash field — parse must return ManifestBlake3Failure.
+    // Corrupt the hash field - parse must return ManifestBlake3Failure.
     ManifestFileEntry e;
     e.path = "x"; e.byte_offset = 0; e.file_size = 0;
     e.file_hash.fill(0); e.inner_format_id = 0;
 
     auto bytes = serialize_manifest({e});
-    // The last 32 bytes are the BLAKE3 hash — zero them out.
+    // The last 32 bytes are the BLAKE3 hash - zero them out.
     for (size_t i = bytes.size() - 32; i < bytes.size(); ++i) bytes[i] = 0xFF;
 
     auto res = parse_manifest(bytes);

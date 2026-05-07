@@ -15,7 +15,7 @@
 using namespace sfc;
 
 // ===========================================================================
-// BLAKE3 — basic hashing
+// BLAKE3 - basic hashing
 // ===========================================================================
 
 TEST(Blake3, EmptyInput) {
@@ -30,7 +30,7 @@ TEST(Blake3, EmptyInput) {
 }
 
 TEST(Blake3, SingleByte) {
-    // BLAKE3 of a single 0x00 byte — must produce a 32-byte result.
+    // BLAKE3 of a single 0x00 byte - must produce a 32-byte result.
     std::array<uint8_t, 1> data = {0x00};
     auto digest = blake3(data);
     EXPECT_EQ(digest.size(), 32u);
@@ -55,7 +55,7 @@ TEST(Blake3, DifferentInputsDifferentDigests) {
 }
 
 // ===========================================================================
-// BLAKE3 — concat
+// BLAKE3 - concat
 // ===========================================================================
 
 TEST(Blake3Concat, EquivalentToJoinedHash) {
@@ -86,7 +86,7 @@ TEST(Blake3Concat, EmptySecond) {
 }
 
 // ===========================================================================
-// BLAKE3 — verify
+// BLAKE3 - verify
 // ===========================================================================
 
 TEST(Blake3Verify, CorrectHash_ReturnsSuccess) {
@@ -98,7 +98,7 @@ TEST(Blake3Verify, CorrectHash_ReturnsSuccess) {
 
 TEST(Blake3Verify, WrongHash_ReturnsError) {
     std::vector<uint8_t> data = {0x01, 0x02, 0x03};
-    Blake3Digest wrong{};   // all-zero — extremely unlikely to match
+    Blake3Digest wrong{};   // all-zero - extremely unlikely to match
     auto res = blake3_verify(data, wrong);
     EXPECT_FALSE(res.has_value());
     EXPECT_EQ(res.error().code, ErrorCode::ChunkBlake3Failure);
@@ -122,7 +122,7 @@ TEST(Blake3Verify, Concat_WrongHash) {
 }
 
 // ===========================================================================
-// Compression — normalize_compression_id
+// Compression - normalize_compression_id
 // ===========================================================================
 
 TEST(Compression, Normalize_0x00_IsIdentity) {
@@ -142,7 +142,7 @@ TEST(Compression, Normalize_0x03_IsLz4) {
 }
 
 // ===========================================================================
-// Compression — identity (0x00) round-trip
+// Compression - identity (0x00) round-trip
 // ===========================================================================
 
 TEST(Compression, Identity_Compress_IsNoop) {
@@ -168,7 +168,7 @@ TEST(Compression, Identity_Decompress_SizeMismatch_ReturnsError) {
 }
 
 // ===========================================================================
-// Compression — zstd (0x01) round-trip
+// Compression - zstd (0x01) round-trip
 // ===========================================================================
 
 TEST(Compression, Zstd_RoundTrip_SmallData) {
@@ -206,7 +206,7 @@ TEST(Compression, Zstd_SizeMismatch_ReturnsError) {
 }
 
 // ===========================================================================
-// Compression — brotli (0x02) round-trip
+// Compression - brotli (0x02) round-trip
 // ===========================================================================
 
 TEST(Compression, Brotli_RoundTrip) {
@@ -222,7 +222,7 @@ TEST(Compression, Brotli_RoundTrip) {
 }
 
 // ===========================================================================
-// Compression — lz4 frame (0x03) round-trip
+// Compression - lz4 frame (0x03) round-trip
 // ===========================================================================
 
 TEST(Compression, Lz4_RoundTrip) {
@@ -237,7 +237,7 @@ TEST(Compression, Lz4_RoundTrip) {
 }
 
 // ===========================================================================
-// Compression — unsupported algorithm
+// Compression - unsupported algorithm
 // ===========================================================================
 
 TEST(Compression, Unsupported_Compress_ReturnsError) {
@@ -272,7 +272,7 @@ TEST(Phase3_Integration, CompressAndHash) {
     auto verify_res = blake3_verify(*compressed, stored_hash);
     EXPECT_TRUE(verify_res.has_value());
 
-    // Tamper with one byte — verify must fail.
+    // Tamper with one byte - verify must fail.
     (*compressed)[0] ^= 0xFF;
     auto tamper_res = blake3_verify(*compressed, stored_hash);
     EXPECT_FALSE(tamper_res.has_value());

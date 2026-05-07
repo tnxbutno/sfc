@@ -133,7 +133,7 @@ TEST(ValidateChunkHash, ValidChunk_OK) {
 TEST(ValidateChunkHash, TamperedPayload_Error) {
     FileUuid uuid{};
     auto chunk = make_valid_parsed_chunk(0, uuid, {0x01, 0x02, 0x03});
-    // Flip one byte — the hash no longer matches.
+    // Flip one byte - the hash no longer matches.
     chunk.payload[0] ^= 0xFF;
 
     auto res = validate_chunk_hash(chunk);
@@ -276,7 +276,7 @@ TEST(ValidateChunkAlgo, CompressMismatch_Error) {
     hdr.erasure_algo     = 0x00;
 
     auto chunk                      = make_valid_parsed_chunk(0, uuid, {});
-    chunk.header.compression_algo   = 0x02;  // brotli ≠ identity
+    chunk.header.compression_algo   = 0x02;  // brotli != identity
 
     auto res = validate_chunk_algo(chunk, hdr);
     ASSERT_FALSE(res.has_value());
@@ -291,7 +291,7 @@ TEST(ValidateChunkAlgo, ErasureMismatch_Error) {
 
     auto chunk                      = make_valid_parsed_chunk(0, uuid, {});
     chunk.header.compression_algo   = 0x00;
-    chunk.header.erasure_algo       = 0x00;  // none ≠ RS
+    chunk.header.erasure_algo       = 0x00;  // none != RS
 
     auto res = validate_chunk_algo(chunk, hdr);
     ASSERT_FALSE(res.has_value());

@@ -19,7 +19,7 @@ namespace sfc {
 //    memcpy is the only correct way to reinterpret bytes as integers.
 // 2. "if constexpr" is a compile-time check (not a runtime branch!).
 //    On our Mac (ARM64, little-endian) this branch is completely eliminated
-//    by the compiler — byteswap is never called. The code exists only for
+//    by the compiler - byteswap is never called. The code exists only for
 //    portability to big-endian platforms.
 // ---------------------------------------------------------------------------
 
@@ -118,7 +118,7 @@ std::vector<uint8_t> zero_pad(std::span<const uint8_t> input,
 std::vector<uint8_t> trim(std::span<const uint8_t> input,
                            size_t target_size) {
     const size_t actual = std::min(input.size(), target_size);
-    // Vector constructor from two iterators — copies the range [begin, begin+actual).
+    // Vector constructor from two iterators - copies the range [begin, begin+actual).
     return {input.begin(), input.begin() + static_cast<std::ptrdiff_t>(actual)};
 }
 

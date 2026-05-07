@@ -1,5 +1,5 @@
 /// @file filename_sanitize.cpp
-/// @brief Filename sanitization and case-folding per SFC §4.8.
+/// @brief Filename sanitization and case-folding per SFC Section 4.8.
 
 #include "sfc/filename_sanitize.h"
 
@@ -103,11 +103,11 @@ std::vector<uint8_t> replace_invalid_utf8(std::span<const uint8_t> input) noexce
     while (i < input.size()) {
         int valid_len = validate_utf8_seq(input, i);
         if (valid_len > 0) {
-            // Valid sequence — copy verbatim.
+            // Valid sequence - copy verbatim.
             for (size_t k = 0; k < static_cast<size_t>(valid_len); ++k) out.push_back(input[i + k]);
             i += static_cast<size_t>(valid_len);
         } else {
-            // Invalid byte — consume ONE byte (maximal subpart = 1 byte when
+            // Invalid byte - consume ONE byte (maximal subpart = 1 byte when
             // the initial byte is not a valid sequence start), emit '_'.
             out.push_back(0x5F);
             ++i;
@@ -127,7 +127,7 @@ Result<std::string> sanitize_filename(std::span<const uint8_t, 255> raw_field) {
         if (raw_field[i] == 0x00) { null_pos = i; break; }
     }
 
-    // Step 2: bytes after null MUST all be zero (§4.8).
+    // Step 2: bytes after null MUST all be zero (Section 4.8).
     for (size_t i = null_pos + 1; i < 255; ++i) {
         if (raw_field[i] != 0x00) {
             return std::unexpected(SfcError{
@@ -140,13 +140,13 @@ Result<std::string> sanitize_filename(std::span<const uint8_t, 255> raw_field) {
     // Effective bytes: [0, null_pos).
     auto effective = raw_field.subspan(0, null_pos);
 
-    // Step 3: Pass 1 — forbidden bytes.
+    // Step 3: Pass 1 - forbidden bytes.
     auto pass1 = replace_forbidden_bytes(effective);
 
-    // Step 4: Pass 2 — invalid UTF-8.
+    // Step 4: Pass 2 - invalid UTF-8.
     auto pass2 = replace_invalid_utf8(pass1);
 
-    // Step 5: reject empty (§4.8 rule b).
+    // Step 5: reject empty (Section 4.8 rule b).
     if (pass2.empty()) {
         return std::unexpected(SfcError{
             ErrorCode::EmptyInnerFilename,
@@ -156,7 +156,7 @@ Result<std::string> sanitize_filename(std::span<const uint8_t, 255> raw_field) {
 
     std::string result(pass2.begin(), pass2.end());
 
-    // Step 6: reject "." and ".." as the entire filename (§4.8).
+    // Step 6: reject "." and ".." as the entire filename (Section 4.8).
     if (result == "." || result == "..") {
         return std::unexpected(SfcError{
             ErrorCode::EmptyInnerFilename,
@@ -226,10 +226,10 @@ static void utf8_encode(uint32_t cp, std::string& out) noexcept {
 /// "C" (common) + "S" (simple) table.
 /// Returns the folded codepoint (or the same codepoint if no folding applies).
 static uint32_t fold_cp(uint32_t cp) noexcept {
-    // Fast path: ASCII A-Z → a-z.
+    // Fast path: ASCII A-Z -> a-z.
     if (cp >= 0x41 && cp <= 0x5A) return cp + 0x20;
 
-    // Unicode 15.1.0 Simple Case Folding — C (common) and S (simple) entries.
+    // Unicode 15.1.0 Simple Case Folding - C (common) and S (simple) entries.
     // Entries are sorted by codepoint for binary search.  This table covers all
     // BMP cased letters from the Latin, Greek, Cyrillic, and Armenian scripts
     // that are likely to appear in filenames.
@@ -250,7 +250,7 @@ static uint32_t fold_cp(uint32_t cp) noexcept {
         {0x0118,0x0119},{0x011A,0x011B},{0x011C,0x011D},{0x011E,0x011F},
         {0x0120,0x0121},{0x0122,0x0123},{0x0124,0x0125},{0x0126,0x0127},
         {0x0128,0x0129},{0x012A,0x012B},{0x012C,0x012D},{0x012E,0x012F},
-        {0x0130,0x0069},  // I with dot above → i (Turkic dotted I)
+        {0x0130,0x0069},  // I with dot above -> i (Turkic dotted I)
         {0x0132,0x0133},{0x0134,0x0135},{0x0136,0x0137},{0x0139,0x013A},
         {0x013B,0x013C},{0x013D,0x013E},{0x013F,0x0140},{0x0141,0x0142},
         {0x0143,0x0144},{0x0145,0x0146},{0x0147,0x0148},{0x014A,0x014B},
@@ -261,7 +261,7 @@ static uint32_t fold_cp(uint32_t cp) noexcept {
         {0x016C,0x016D},{0x016E,0x016F},{0x0170,0x0171},{0x0172,0x0173},
         {0x0174,0x0175},{0x0176,0x0177},{0x0178,0x00FF},{0x0179,0x017A},
         {0x017B,0x017C},{0x017D,0x017E},
-        // Latin Extended-B (0x0181-0x024E) — non-pair exceptions first, then pairs
+        // Latin Extended-B (0x0181-0x024E) - non-pair exceptions first, then pairs
         {0x0181,0x0253},{0x0182,0x0183},{0x0184,0x0185},{0x0186,0x0254},
         {0x0187,0x0188},{0x0189,0x0256},{0x018A,0x0257},{0x018B,0x018C},
         {0x018E,0x01DD},{0x018F,0x0259},{0x0190,0x025B},{0x0191,0x0192},
@@ -293,7 +293,7 @@ static uint32_t fold_cp(uint32_t cp) noexcept {
         {0x0370,0x0371},{0x0372,0x0373},{0x0376,0x0377},{0x037F,0x03F3},
         {0x0386,0x03AC},{0x0388,0x03AD},{0x0389,0x03AE},{0x038A,0x03AF},
         {0x038C,0x03CC},{0x038E,0x03CD},{0x038F,0x03CE},
-        // Greek capitals Α-Ω
+        // Greek capitals Alpha-Omega
         {0x0391,0x03B1},{0x0392,0x03B2},{0x0393,0x03B3},{0x0394,0x03B4},
         {0x0395,0x03B5},{0x0396,0x03B6},{0x0397,0x03B7},{0x0398,0x03B8},
         {0x0399,0x03B9},{0x039A,0x03BA},{0x039B,0x03BB},{0x039C,0x03BC},
@@ -306,12 +306,12 @@ static uint32_t fold_cp(uint32_t cp) noexcept {
         {0x03E6,0x03E7},{0x03E8,0x03E9},{0x03EA,0x03EB},{0x03EC,0x03ED},
         {0x03EE,0x03EF},{0x03F4,0x03B8},{0x03F7,0x03F8},{0x03F9,0x03F2},
         {0x03FA,0x03FB},{0x03FD,0x037B},{0x03FE,0x037C},{0x03FF,0x037D},
-        // Cyrillic 0x0400-0x040F → 0x0450-0x045F
+        // Cyrillic 0x0400-0x040F -> 0x0450-0x045F
         {0x0400,0x0450},{0x0401,0x0451},{0x0402,0x0452},{0x0403,0x0453},
         {0x0404,0x0454},{0x0405,0x0455},{0x0406,0x0456},{0x0407,0x0457},
         {0x0408,0x0458},{0x0409,0x0459},{0x040A,0x045A},{0x040B,0x045B},
         {0x040C,0x045C},{0x040D,0x045D},{0x040E,0x045E},{0x040F,0x045F},
-        // Cyrillic А-Я → а-я
+        // Cyrillic A-Ya -> a-ya
         {0x0410,0x0430},{0x0411,0x0431},{0x0412,0x0432},{0x0413,0x0433},
         {0x0414,0x0434},{0x0415,0x0435},{0x0416,0x0436},{0x0417,0x0437},
         {0x0418,0x0438},{0x0419,0x0439},{0x041A,0x043A},{0x041B,0x043B},
@@ -340,7 +340,7 @@ static uint32_t fold_cp(uint32_t cp) noexcept {
         {0x04EA,0x04EB},{0x04EC,0x04ED},{0x04EE,0x04EF},{0x04F0,0x04F1},
         {0x04F2,0x04F3},{0x04F4,0x04F5},{0x04F6,0x04F7},{0x04F8,0x04F9},
         {0x04FA,0x04FB},{0x04FC,0x04FD},{0x04FE,0x04FF},
-        // Armenian uppercase 0x0531-0x0556 → 0x0561-0x0586
+        // Armenian uppercase 0x0531-0x0556 -> 0x0561-0x0586
         {0x0531,0x0561},{0x0532,0x0562},{0x0533,0x0563},{0x0534,0x0564},
         {0x0535,0x0565},{0x0536,0x0566},{0x0537,0x0567},{0x0538,0x0568},
         {0x0539,0x0569},{0x053A,0x056A},{0x053B,0x056B},{0x053C,0x056C},
@@ -351,7 +351,7 @@ static uint32_t fold_cp(uint32_t cp) noexcept {
         {0x054D,0x057D},{0x054E,0x057E},{0x054F,0x057F},{0x0550,0x0580},
         {0x0551,0x0581},{0x0552,0x0582},{0x0553,0x0583},{0x0554,0x0584},
         {0x0555,0x0585},{0x0556,0x0586},
-        // Latin Extended Additional (0x1E00-0x1EFF) — pairs even→odd
+        // Latin Extended Additional (0x1E00-0x1EFF) - pairs even->odd
         {0x1E00,0x1E01},{0x1E02,0x1E03},{0x1E04,0x1E05},{0x1E06,0x1E07},
         {0x1E08,0x1E09},{0x1E0A,0x1E0B},{0x1E0C,0x1E0D},{0x1E0E,0x1E0F},
         {0x1E10,0x1E11},{0x1E12,0x1E13},{0x1E14,0x1E15},{0x1E16,0x1E17},
@@ -374,12 +374,12 @@ static uint32_t fold_cp(uint32_t cp) noexcept {
         // Letterlike Symbols
         {0x2126,0x03C9},{0x212A,0x006B},{0x212B,0x00E5},
         {0x2132,0x214E},{0x2183,0x2184},
-        // Roman numerals Ⅰ-Ⅻ → ⅰ-ⅻ (0x2160-0x216F)
+        // Roman numerals I-XII -> i-xii (0x2160-0x216F)
         {0x2160,0x2170},{0x2161,0x2171},{0x2162,0x2172},{0x2163,0x2173},
         {0x2164,0x2174},{0x2165,0x2175},{0x2166,0x2176},{0x2167,0x2177},
         {0x2168,0x2178},{0x2169,0x2179},{0x216A,0x217A},{0x216B,0x217B},
         {0x216C,0x217C},{0x216D,0x217D},{0x216E,0x217E},{0x216F,0x217F},
-        // Enclosed Latin capitals Ⓐ-Ⓩ → ⓐ-ⓩ (0x24B6-0x24CF)
+        // Enclosed Latin capitals A-Z -> a-z (0x24B6-0x24CF)
         {0x24B6,0x24D0},{0x24B7,0x24D1},{0x24B8,0x24D2},{0x24B9,0x24D3},
         {0x24BA,0x24D4},{0x24BB,0x24D5},{0x24BC,0x24D6},{0x24BD,0x24D7},
         {0x24BE,0x24D8},{0x24BF,0x24D9},{0x24C0,0x24DA},{0x24C1,0x24DB},

@@ -1,16 +1,16 @@
 #pragma once
 
 /// @file manifest.h
-/// @brief Pure parse/serialize for the directory Manifest (P5, §16.2, §16.3).
+/// @brief Pure parse/serialize for the directory Manifest (P5, Section 16.2, Section 16.3).
 ///
 /// Manifest binary layout:
 ///   [0]     4    "MFST" magic
 ///   [4]     4    Body length B (LE uint32); B = 4 + sum(entry sizes)
 ///   [8]     4    File count F (LE uint32)
-///   [12]    var  F file entries (§16.3)
+///   [12]    var  F file entries (Section 16.3)
 ///   [8+B]   32   BLAKE3(bytes 0..8+B-1)
 ///
-/// File entry layout (§16.3):
+/// File entry layout (Section 16.3):
 ///   [0]   2    Path length L (LE uint16)
 ///   [2]   L    Relative path (UTF-8)
 ///   [2+L] 8    Byte offset in inner content (LE uint64)
@@ -29,7 +29,7 @@
 
 namespace sfc {
 
-/// One file entry in the Manifest (§16.3).
+/// One file entry in the Manifest (Section 16.3).
 struct ManifestFileEntry {
     std::string  path;           ///< Relative path (UTF-8, '/' separated).
     uint64_t     byte_offset;    ///< Byte offset in inner content stream.

@@ -1,5 +1,5 @@
 /// @file cmd_repair.cpp
-/// @brief `sfc repair` — best-effort recovery; accepts Partial reassembly.
+/// @brief `sfc repair` - best-effort recovery; accepts Partial reassembly.
 ///
 /// Exit codes:  0 = fully recovered   2 = partial   1 = unrecoverable
 
@@ -35,7 +35,7 @@ void setup_repair(CLI::App& app) {
         "Output file or directory (default: current working directory)");
 
     cmd->callback([opts] {
-        // ── Auto-discover split-transport siblings when only one file is given ──
+        // -- Auto-discover split-transport siblings when only one file is given --
         if (opts->inputs.size() == 1) {
             auto siblings = cli::discover_split_siblings(opts->inputs[0]);
             if (siblings.size() > 1) {
@@ -83,7 +83,7 @@ void setup_repair(CLI::App& app) {
                                                 : cli::format_uuid(entry.uuid);
             }();
 
-            // ── Report ────────────────────────────────────────────────────
+            // -- Report ----------------------------------------------------
             switch (entry.result.status) {
                 case sfc::ReassemblyStatus::FullyVerified:
                     std::println(stderr, "{}: fully recovered", label);
@@ -109,7 +109,7 @@ void setup_repair(CLI::App& app) {
                 }
             }
 
-            // ── Detect directory profile ───────────────────────────────────
+            // -- Detect directory profile -----------------------------------
             const bool p5 = [&] {
                 auto it = hdr_map.find(entry.uuid);
                 if (it == hdr_map.end()) return false;
@@ -117,7 +117,7 @@ void setup_repair(CLI::App& app) {
                         (1u << static_cast<uint16_t>(sfc::FlagBit::DirectoryProfile))) != 0;
             }();
 
-            // ── Write output ──────────────────────────────────────────────
+            // -- Write output ----------------------------------------------
             try {
                 if (p5) {
                     auto dir = sfc::extract_directory_full(
@@ -150,7 +150,7 @@ void setup_repair(CLI::App& app) {
                         }
                     }
                 } else {
-                    // Derive output filename: sanitize inner filename → UUID prefix fallback.
+                    // Derive output filename: sanitize inner filename -> UUID prefix fallback.
                     const std::string inner_name = [&] -> std::string {
                         auto it = hdr_map.find(entry.uuid);
                         if (it != hdr_map.end()) {

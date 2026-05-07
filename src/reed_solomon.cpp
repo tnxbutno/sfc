@@ -1,7 +1,7 @@
 /// @file reed_solomon.cpp
-/// @brief Reed-Solomon erasure coding over GF(2^16) — implementation.
+/// @brief Reed-Solomon erasure coding over GF(2^16) - implementation.
 ///
-/// Follows SFC spec §6.4 exactly:
+/// Follows SFC spec Section 6.4 exactly:
 ///   Generator: Cauchy matrix C[i][j] = gf_inv(i XOR (M+j))
 ///   Encoding:  R[i][w] = XOR_j ( gf_mul(C[i][j], W[j][w]) )
 ///   Reconstruction: build system matrix A from available chunks,
@@ -51,12 +51,12 @@ std::vector<uint8_t> words_to_block(std::span<const uint16_t> words) {
 // ---------------------------------------------------------------------------
 
 gf::GfMatrix build_cauchy_matrix(uint32_t n, uint32_t m) {
-    // Allocate M×N matrix.
+    // Allocate MxN matrix.
     gf::GfMatrix c = gf::make_zero_matrix(m, n);
 
     for (uint32_t i = 0; i < m; ++i) {
         for (uint32_t j = 0; j < n; ++j) {
-            // Spec §6.4: C[i][j] = gf_inv(i XOR (M + j)).
+            // Spec Section 6.4: C[i][j] = gf_inv(i XOR (M + j)).
             // Since i < M and (M+j) >= M, the XOR is always non-zero,
             // so gf_inv is always well-defined here.
             uint16_t denom = static_cast<uint16_t>(i ^ (m + j));
@@ -79,7 +79,7 @@ rs_encode(const std::vector<std::vector<uint8_t>>& data_blocks, uint32_t m) {
         return std::unexpected(SfcError{ErrorCode::InvalidArgument, "rs_encode: N=0"});
     }
     if (m == 0) {
-        // Nothing to encode — return empty vector.
+        // Nothing to encode - return empty vector.
         return std::vector<std::vector<uint8_t>>{};
     }
 
@@ -108,7 +108,7 @@ rs_encode(const std::vector<std::vector<uint8_t>>& data_blocks, uint32_t m) {
         data_words[j] = block_to_words(data_blocks[j]);
     }
 
-    // Build Cauchy matrix C (M×N).
+    // Build Cauchy matrix C (MxN).
     gf::GfMatrix C = build_cauchy_matrix(n, m);
 
     // Compute M recovery blocks.
@@ -166,10 +166,10 @@ rs_reconstruct(const std::vector<RsChunk>& available, uint32_t n, uint32_t m, ui
         }
     }
 
-    // Build the N×N system matrix A per spec §6.4:
+    // Build the NxN system matrix A per spec Section 6.4:
     //   - For each available position i, if chunk.index = idx:
-    //       idx < N  → identity row (row[j] = 1 if j==idx else 0)
-    //       idx >= N → Cauchy row [gf_inv(k ^ (M+j)) for j in 0..N], k = idx - N
+    //       idx < N  -> identity row (row[j] = 1 if j==idx else 0)
+    //       idx >= N -> Cauchy row [gf_inv(k ^ (M+j)) for j in 0..N], k = idx - N
     gf::GfMatrix A = gf::make_zero_matrix(n, n);
     gf::GfMatrix C = build_cauchy_matrix(n, m);  // full Cauchy for recovery rows
 

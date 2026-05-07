@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file validation.h
-/// @brief Pure validation pipeline D1–D5 per SFC §9.4 dependency groups.
+/// @brief Pure validation pipeline D1-D5 per SFC Section 9.4 dependency groups.
 ///
 /// All functions are pure (no I/O, no side effects).
 
@@ -17,7 +17,7 @@
 namespace sfc {
 
 // ---------------------------------------------------------------------------
-// D1 — Preamble validation
+// D1 - Preamble validation
 // ---------------------------------------------------------------------------
 
 /// @brief D1: Verify the 8-byte file preamble (magic + version).
@@ -29,7 +29,7 @@ namespace sfc {
 [[nodiscard]] VoidResult validate_preamble(std::span<const uint8_t, 8> preamble);
 
 // ---------------------------------------------------------------------------
-// D2 — Global Header + Trailer hash
+// D2 - Global Header + Trailer hash
 // ---------------------------------------------------------------------------
 
 /// @brief D2c: Verify the Trailer BLAKE3 hash covers the Global Header Region.
@@ -44,7 +44,7 @@ namespace sfc {
     std::span<const uint8_t> header_region_bytes);
 
 // ---------------------------------------------------------------------------
-// D3 — Per-chunk phase 1: Provisional validation
+// D3 - Per-chunk phase 1: Provisional validation
 // ---------------------------------------------------------------------------
 
 /// @brief D3d: Verify the per-chunk BLAKE3 hash (header || payload).
@@ -53,7 +53,7 @@ namespace sfc {
 /// @return VoidResult: success, or ChunkBlake3Failure.
 [[nodiscard]] VoidResult validate_chunk_hash(const ParsedChunk& chunk);
 
-/// @brief D3c: Verify compressed payload length ≤ 2*S (§17.3).
+/// @brief D3c: Verify compressed payload length <= 2*S (Section 17.3).
 ///
 /// @param chunk  ParsedChunk.
 /// @param s      Nominal chunk size from Global Header.
@@ -62,7 +62,7 @@ namespace sfc {
                                                         uint32_t s);
 
 // ---------------------------------------------------------------------------
-// D4 — Per-chunk phase 2: Working set promotion
+// D4 - Per-chunk phase 2: Working set promotion
 // ---------------------------------------------------------------------------
 
 /// @brief D4a: Verify chunk File UUID matches the Global Header UUID.
@@ -90,7 +90,7 @@ namespace sfc {
                                               const GlobalHeader& hdr);
 
 // ---------------------------------------------------------------------------
-// D5 — Reconstruction validation
+// D5 - Reconstruction validation
 // ---------------------------------------------------------------------------
 
 /// @brief D5f: Verify the reconstructed inner content against the global hash.

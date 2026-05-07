@@ -1,7 +1,7 @@
 #pragma once
 
 /// @file reassembly.h
-/// @brief Pure reassembly procedures §9.1 (full), §9.2 (unverified), §9.3 (partial).
+/// @brief Pure reassembly procedures Section 9.1 (full), Section 9.2 (unverified), Section 9.3 (partial).
 ///
 /// All functions are pure (no I/O). They operate on in-memory data.
 
@@ -34,16 +34,16 @@ struct ReassemblyResult {
 };
 
 // ---------------------------------------------------------------------------
-// Duplicate handling (§9.5, applied before reassembly)
+// Duplicate handling (Section 9.5, applied before reassembly)
 // ---------------------------------------------------------------------------
 
-/// @brief Handle duplicate chunks per §9.5.
+/// @brief Handle duplicate chunks per Section 9.5.
 ///
 /// Benign duplicates (same hash): keeps one copy.
 /// Contaminated (same index, different hash):
-///   - B1: exactly one passes hash check → keep it.
-///   - B2: both pass → hard error (ContaminatedDuplicate).
-///   - B3: neither passes → discard both.
+///   - B1: exactly one passes hash check -> keep it.
+///   - B2: both pass -> hard error (ContaminatedDuplicate).
+///   - B3: neither passes -> discard both.
 ///
 /// @param chunks Input chunks (may contain duplicates).
 /// @return Deduplicated vector, or ContaminatedDuplicate on B2.
@@ -51,10 +51,10 @@ struct ReassemblyResult {
 handle_duplicates(std::vector<ParsedChunk> chunks);
 
 // ---------------------------------------------------------------------------
-// §9.1 Full Reassembly
+// Section 9.1 Full Reassembly
 // ---------------------------------------------------------------------------
 
-/// @brief Full reassembly (§9.1): all N chunks present, Trailer verified.
+/// @brief Full reassembly (Section 9.1): all N chunks present, Trailer verified.
 ///
 /// Decompresses each data chunk, concatenates blocks, trims to inner_file_size,
 /// verifies global hash (D5f).
@@ -69,10 +69,10 @@ full_reassembly(const std::vector<std::vector<uint8_t>>& data_blocks,
                 bool trailer_verified);
 
 // ---------------------------------------------------------------------------
-// §9.3 Partial Reassembly
+// Section 9.3 Partial Reassembly
 // ---------------------------------------------------------------------------
 
-/// @brief Partial reassembly (§9.3): fewer than N chunks available.
+/// @brief Partial reassembly (Section 9.3): fewer than N chunks available.
 ///
 /// Finds the longest contiguous run of data chunks starting from 0.
 /// Decompresses and concatenates them. No hash verification possible.

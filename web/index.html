@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SFC - online demo</title>
+<style>
+:root {
+  --bg:      #0d0d0d;
+  --surface: #181818;
+  --border:  #2a2a2a;
+  --text:    #e4e4e4;
+  --muted:   #777;
+  --accent:  #3b82f6;
+  --acc2:    #2563eb;
+  --ok:      #22c55e;
+  --err:     #ef4444;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:      #f2f2f2;
+    --surface: #fff;
+    --border:  #ddd;
+    --text:    #111;
+    --muted:   #666;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;min-height:100vh}
+
+header{
+  padding:2rem 1.5rem 1.5rem;
+  border-bottom:1px solid var(--border);
+  text-align:center;
+}
+header h1{font-size:1.4rem;font-weight:700;letter-spacing:-.02em}
+header p{color:var(--muted);font-size:.85rem;margin-top:.4rem}
+
+main{
+  max-width:860px;
+  margin:2rem auto;
+  padding:0 1rem 4rem;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:1.25rem;
+}
+@media(max-width:600px){main{grid-template-columns:1fr}}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:1.25rem;
+}
+.card h2{font-size:.9rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.35rem}
+.card .desc{color:var(--muted);font-size:.82rem;line-height:1.35;margin-bottom:1rem}
+
+.drop{
+  border:2px dashed var(--border);
+  border-radius:6px;
+  padding:1.75rem 1rem;
+  text-align:center;
+  color:var(--muted);
+  font-size:.85rem;
+  cursor:pointer;
+  transition:border-color .15s,background .15s;
+  line-height:1.6;
+  min-height:90px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:.25rem;
+  margin-bottom:1rem;
+  user-select:none;
+}
+.drop:hover,.drop.over{border-color:var(--accent)}
+.drop.has-file{border-color:var(--ok);border-style:solid;color:var(--text)}
+.drop .fname{font-weight:500;word-break:break-all}
+.drop .fmeta{font-size:.8rem;color:var(--muted)}
+
+.row{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;font-size:.85rem}
+.row label{color:var(--muted);white-space:nowrap;min-width:7rem}
+.row input,.row select{
+  flex:1;
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:4px;
+  color:var(--text);
+  padding:.35rem .5rem;
+  font-size:.85rem;
+}
+.spacer{height:5.5rem}
+
+button{
+  background:var(--accent);
+  border:none;
+  border-radius:6px;
+  color:#fff;
+  cursor:pointer;
+  font-size:.85rem;
+  font-weight:500;
+  padding:.5rem 1rem;
+  width:100%;
+  transition:background .15s;
+}
+button:hover:not(:disabled){background:var(--acc2)}
+button:disabled{opacity:.45;cursor:default}
+
+.result{margin-top:1rem;font-size:.82rem;display:flex;flex-direction:column;gap:.4rem}
+.result a{color:var(--accent);word-break:break-all}
+.ok{color:var(--ok)}
+.err{color:var(--err)}
+.dim{color:var(--muted)}
+
+#overlay{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.6);
+  align-items:center;justify-content:center;
+  font-size:.9rem;color:var(--muted);
+}
+#overlay.on{display:flex}
+</style>
+</head>
+<body>
+
+<div id="overlay">Loading SFC engine...</div>
+
+<header>
+  <h1>SFC - online demo</h1>
+  <p>Pack and unpack SFC containers in your browser. Nothing is uploaded anywhere.</p>
+</header>
+
+<main>
+
+  <!-- Pack -->
+  <div class="card">
+    <h2>pack</h2>
+    <p class="desc">Create an SFC container from a local file.</p>
+    <div class="drop" id="pack-drop">
+      <span>Drop a file here</span>
+      <span class="dim">or click to choose</span>
+    </div>
+    <input type="file" id="pack-file" hidden>
+
+    <div class="row">
+      <label>Recovery (M)</label>
+      <input type="number" id="m-val" value="0" min="0" max="32" step="1">
+    </div>
+    <div class="row">
+      <label>Compression</label>
+      <select id="algo">
+        <option value="zstd" selected>zstd</option>
+        <option value="brotli">brotli</option>
+        <option value="lz4">lz4</option>
+        <option value="none">none</option>
+      </select>
+    </div>
+
+    <button id="pack-btn" disabled>Pack</button>
+    <div class="result" id="pack-out"></div>
+  </div>
+
+  <!-- Unpack -->
+  <div class="card">
+    <h2>unpack</h2>
+    <p class="desc">Extract a fully recoverable SFC container.</p>
+    <div class="drop" id="unpack-drop">
+      <span>Drop an .sfc file here</span>
+      <span class="dim">or click to choose</span>
+    </div>
+    <input type="file" id="unpack-file" hidden accept=".sfc">
+
+    <div class="spacer"></div>
+
+    <button id="unpack-btn" disabled>Unpack</button>
+    <div class="result" id="unpack-out"></div>
+  </div>
+
+  <!-- Info -->
+  <div class="card">
+    <h2>info</h2>
+    <p class="desc">Show container metadata without extracting content.</p>
+    <div class="drop" id="info-drop">
+      <span>Drop an .sfc file here</span>
+      <span class="dim">or click to choose</span>
+    </div>
+    <input type="file" id="info-file" hidden accept=".sfc">
+
+    <button id="info-btn" disabled>Info</button>
+    <div class="result" id="info-out"></div>
+  </div>
+
+  <!-- Verify -->
+  <div class="card">
+    <h2>verify</h2>
+    <p class="desc">Validate container integrity without writing output.</p>
+    <div class="drop" id="verify-drop">
+      <span>Drop an .sfc file here</span>
+      <span class="dim">or click to choose</span>
+    </div>
+    <input type="file" id="verify-file" hidden accept=".sfc">
+
+    <button id="verify-btn" disabled>Verify</button>
+    <div class="result" id="verify-out"></div>
+  </div>
+
+</main>
+
+<script src="sfc_wasm.js"></script>
+<script>
+const overlay = document.getElementById('overlay');
+overlay.classList.add('on');
+
+SfcModule().then(sfc => {
+  overlay.classList.remove('on');
+  initPack(sfc);
+  initUnpack(sfc);
+  initInfo(sfc);
+  initVerify(sfc);
+}).catch(err => {
+  overlay.textContent = 'Failed to load: ' + err.message;
+});
+
+// Utilities
+
+function fmt(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1048576).toFixed(1) + ' MB';
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function dl(bytes, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([bytes], {type:'application/octet-stream'}));
+  a.download = name;
+  a.textContent = 'Download ' + name;
+  return a;
+}
+
+function span(cls, text) {
+  const s = document.createElement('span');
+  s.className = cls;
+  s.textContent = text;
+  return s;
+}
+
+function line(label, value) {
+  return span('dim', label + ': ' + value);
+}
+
+function fmtTime(ts) {
+  if (!ts) return 'unset';
+  return new Date(ts * 1000).toISOString().replace('.000Z', 'Z');
+}
+
+function bindDrop(zoneId, inputId, onFile) {
+  const zone  = document.getElementById(zoneId);
+  const input = document.getElementById(inputId);
+  zone.addEventListener('click',     () => input.click());
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('over');
+    const f = e.dataTransfer.files[0];
+    if (f) onFile(f);
+  });
+  input.addEventListener('change', () => { if (input.files[0]) onFile(input.files[0]); });
+  return zone;
+}
+
+// Pack
+
+function initPack(sfc) {
+  let file = null;
+  const zone = bindDrop('pack-drop', 'pack-file', f => {
+    file = f;
+    zone.innerHTML =
+      '<span class="fname">' + esc(f.name) + '</span>' +
+      '<span class="fmeta">' + fmt(f.size) + '</span>';
+    zone.classList.add('has-file');
+    document.getElementById('pack-btn').disabled = false;
+    document.getElementById('pack-out').innerHTML = '';
+  });
+
+  document.getElementById('pack-btn').addEventListener('click', async () => {
+    if (!file) return;
+    const btn = document.getElementById('pack-btn');
+    const out = document.getElementById('pack-out');
+    btn.disabled = true;
+    out.innerHTML = '';
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const m     = Math.max(0, parseInt(document.getElementById('m-val').value) || 0);
+      const algo  = document.getElementById('algo').value;
+      const uuid  = new Uint8Array(16);
+      crypto.getRandomValues(uuid);
+
+      const result  = sfc.encode(bytes, m, file.name, algo, uuid);
+      const outName = file.name + '.sfc';
+
+      let info = fmt(bytes.length) + ' -> ' + fmt(result.length);
+      if (m > 0) info += '  (M=' + m + ', survives losing any ' + m + ' chunk' + (m > 1 ? 's' : '') + ')';
+      out.appendChild(span('ok', info));
+      out.appendChild(dl(result, outName));
+    } catch (e) {
+      out.appendChild(span('err', 'Error: ' + e.message));
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+// Unpack
+
+function initUnpack(sfc) {
+  let file = null;
+  const zone = bindDrop('unpack-drop', 'unpack-file', async f => {
+    file = f;
+    const btn = document.getElementById('unpack-btn');
+    const out = document.getElementById('unpack-out');
+    btn.disabled = true;
+    out.innerHTML = '';
+    zone.classList.add('has-file');
+
+    try {
+      const bytes = new Uint8Array(await f.arrayBuffer());
+      const info  = sfc.info(bytes);
+      zone.innerHTML =
+        '<span class="fname">' + esc(f.name) + '</span>' +
+        '<span class="fmeta">' +
+          esc('N=' + info.n + '  M=' + info.m +
+              '  compression: ' + info.compression +
+              (info.filename ? '  inner: ' + info.filename : '')) +
+        '</span>';
+    } catch {
+      zone.innerHTML = '<span class="fname">' + esc(f.name) + '</span>';
+    }
+    btn.disabled = false;
+  });
+
+  document.getElementById('unpack-btn').addEventListener('click', async () => {
+    if (!file) return;
+    const btn = document.getElementById('unpack-btn');
+    const out = document.getElementById('unpack-out');
+    btn.disabled = true;
+    out.innerHTML = '';
+    try {
+      const bytes  = new Uint8Array(await file.arrayBuffer());
+      const result = sfc.decode(bytes);
+      const name   = result.filename || 'output.bin';
+
+      out.appendChild(span('ok', 'Status: ' + result.status));
+      out.appendChild(span('dim', fmt(result.data.length)));
+      out.appendChild(dl(result.data, name));
+    } catch (e) {
+      out.appendChild(span('err', 'Error: ' + e.message));
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+// Info
+
+function initInfo(sfc) {
+  let file = null;
+  const zone = bindDrop('info-drop', 'info-file', f => {
+    file = f;
+    zone.innerHTML =
+      '<span class="fname">' + esc(f.name) + '</span>' +
+      '<span class="fmeta">' + fmt(f.size) + '</span>';
+    zone.classList.add('has-file');
+    document.getElementById('info-btn').disabled = false;
+    document.getElementById('info-out').innerHTML = '';
+  });
+
+  document.getElementById('info-btn').addEventListener('click', async () => {
+    if (!file) return;
+    const btn = document.getElementById('info-btn');
+    const out = document.getElementById('info-out');
+    btn.disabled = true;
+    out.innerHTML = '';
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const info  = sfc.info(bytes);
+      out.appendChild(line('UUID', info.uuid));
+      out.appendChild(line('Profile', info.profile));
+      out.appendChild(line('Filename', info.filename || '(none)'));
+      out.appendChild(line('Format ID', '0x' + info.formatId.toString(16).padStart(4, '0') + ' (' + info.formatName + ')'));
+      out.appendChild(line('N / M / S', info.n + ' / ' + info.m + ' / ' + info.s));
+      out.appendChild(line('Compression', info.compression));
+      out.appendChild(line('Erasure', info.erasure));
+      out.appendChild(line('Inner size', fmt(info.innerSize)));
+      out.appendChild(line('Timestamp', fmtTime(info.timestamp)));
+      out.appendChild(line('Trailer', info.trailer ? 'present' : 'absent'));
+      if (info.author || info.description || info.location || info.software || info.comment) {
+        if (info.author) out.appendChild(line('Author', info.author));
+        if (info.description) out.appendChild(line('Desc', info.description));
+        if (info.location) out.appendChild(line('Location', info.location));
+        if (info.software) out.appendChild(line('Software', info.software));
+        if (info.comment) out.appendChild(line('Comment', info.comment));
+      }
+    } catch (e) {
+      out.appendChild(span('err', 'Error: ' + e.message));
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
+// Verify
+
+function initVerify(sfc) {
+  let file = null;
+  const zone = bindDrop('verify-drop', 'verify-file', f => {
+    file = f;
+    zone.innerHTML =
+      '<span class="fname">' + esc(f.name) + '</span>' +
+      '<span class="fmeta">' + fmt(f.size) + '</span>';
+    zone.classList.add('has-file');
+    document.getElementById('verify-btn').disabled = false;
+    document.getElementById('verify-out').innerHTML = '';
+  });
+
+  document.getElementById('verify-btn').addEventListener('click', async () => {
+    if (!file) return;
+    const btn = document.getElementById('verify-btn');
+    const out = document.getElementById('verify-out');
+    btn.disabled = true;
+    out.innerHTML = '';
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const res   = sfc.verify(bytes);
+      out.appendChild(span(res.ok ? 'ok' : 'err', 'Status: ' + res.status));
+      out.appendChild(line('Recovered size', fmt(res.recoveredSize)));
+      if (!res.ok) {
+        out.appendChild(line('Missing chunks', Array.from(res.missingChunks).join(', ') || '(unknown)'));
+      }
+    } catch (e) {
+      out.appendChild(span('err', 'Error: ' + e.message));
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 /// @file cmd_pack.cpp
-/// @brief `sfc pack` — file or directory → SFC container(s).
+/// @brief `sfc pack` - file or directory -> SFC container(s).
 
 #include "cmd_pack.h"
 #include "utils.h"
@@ -63,7 +63,7 @@ void setup_pack(CLI::App& app) {
     cmd->callback([opts] {
         const std::string& input = opts->input;
 
-        // ── Resolve output path ───────────────────────────────────────────
+        // -- Resolve output path -------------------------------------------
         if (opts->output.empty()) {
             if (input == "-") {
                 std::println(stderr, "sfc pack: --output required when reading from stdin");
@@ -73,14 +73,14 @@ void setup_pack(CLI::App& app) {
         }
         const std::string& output = opts->output;
 
-        // ── Determine current time if no timestamp provided ───────────────
+        // -- Determine current time if no timestamp provided ---------------
         const uint64_t ts = (opts->timestamp != 0)
             ? opts->timestamp
             : static_cast<uint64_t>(
                   std::chrono::duration_cast<std::chrono::seconds>(
                       std::chrono::system_clock::now().time_since_epoch()).count());
 
-        // ── Build EncodeParams ────────────────────────────────────────────
+        // -- Build EncodeParams --------------------------------------------
         sfc::EncodeParams params{
             .m         = opts->recovery,
             .s         = opts->chunk_size,
@@ -98,7 +98,7 @@ void setup_pack(CLI::App& app) {
             },
         };
 
-        // ── Directory input ───────────────────────────────────────────────
+        // -- Directory input -----------------------------------------------
         const bool is_dir = (input != "-") && std::filesystem::is_directory(input);
 
         if (is_dir) {
@@ -148,7 +148,7 @@ void setup_pack(CLI::App& app) {
             return;
         }
 
-        // ── File or stdin input ───────────────────────────────────────────
+        // -- File or stdin input -------------------------------------------
         std::vector<uint8_t> content =
             (input == "-") ? cli::read_stdin() : cli::read_file(input);
 

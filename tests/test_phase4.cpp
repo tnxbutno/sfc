@@ -68,7 +68,7 @@ TEST(Utf8Replace, ValidAscii_Unchanged) {
 }
 
 TEST(Utf8Replace, Valid2ByteSeq_Unchanged) {
-    // U+00E9 (é) = 0xC3 0xA9
+    // U+00E9, Latin small letter e with acute, encoded as 0xC3 0xA9.
     std::vector<uint8_t> in = {0xC3, 0xA9};
     auto out = replace_invalid_utf8(in);
     EXPECT_EQ(out, in);
@@ -93,14 +93,14 @@ TEST(Utf8Replace, TruncatedSequence_Replaced) {
 }
 
 TEST(Utf8Replace, OverlongSequence_Replaced) {
-    // 0xC0 0x80 — overlong encoding of U+0000, invalid.
+    // 0xC0 0x80 - overlong encoding of U+0000, invalid.
     std::vector<uint8_t> in = {0xC0, 0x80};
     auto out = replace_invalid_utf8(in);
     EXPECT_EQ(out[0], '_');  // 0xC0 is invalid leading byte (< 0xC2)
 }
 
 TEST(Utf8Replace, SurrogateRange_Replaced) {
-    // 0xED 0xA0 0x80 would be U+D800 (surrogate) — invalid.
+    // 0xED 0xA0 0x80 would be U+D800 (surrogate) - invalid.
     std::vector<uint8_t> in = {0xED, 0xA0, 0x80};
     auto out = replace_invalid_utf8(in);
     EXPECT_EQ(out[0], '_');
@@ -135,7 +135,7 @@ TEST(SanitizeFilename, SlashInName_BecomesUnderscore) {
     auto field = make_field("foo/bar");
     auto res = sanitize_filename(field);
     ASSERT_TRUE(res.has_value());
-    // '/' is forbidden → replaced; "foo" + '_' + "bar"
+    // '/' is forbidden -> replaced; "foo" + '_' + "bar"
     EXPECT_EQ(*res, "foo_bar");
 }
 
@@ -171,7 +171,7 @@ TEST(CaseFold, AlreadyLower_Unchanged) {
 }
 
 TEST(CaseFold, LatinExtended) {
-    // U+00C9 (É) → U+00E9 (é)
+    // U+00C9, Latin capital letter e with acute, folds to U+00E9.
     std::string upper = "\xC3\x89";  // UTF-8 for U+00C9
     std::string lower = "\xC3\xA9";  // UTF-8 for U+00E9
     EXPECT_EQ(case_fold(upper), lower);

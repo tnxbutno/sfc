@@ -1,5 +1,5 @@
 /// @file manifest.cpp
-/// @brief Directory Manifest parse/serialize (P5, §16).
+/// @brief Directory Manifest parse/serialize (P5, Section 16).
 
 #include "sfc/manifest.h"
 #include "sfc/blake3_hash.h"
@@ -13,7 +13,7 @@
 namespace sfc {
 
 Result<Manifest> parse_manifest(std::span<const uint8_t> data) {
-    // Minimum: 8 (header) + 4 (F field) + 32 (hash) = 44 bytes, with B>=4 → at least 44.
+    // Minimum: 8 (header) + 4 (F field) + 32 (hash) = 44 bytes, with B>=4 -> at least 44.
     if (data.size() < 44) {
         return std::unexpected(SfcError{
             ErrorCode::InvalidMagic,
@@ -33,7 +33,7 @@ Result<Manifest> parse_manifest(std::span<const uint8_t> data) {
     // Body length B [4..7].
     uint32_t B = read_u32_le(std::span<const uint8_t, 4>{data.data() + 4, 4});
 
-    // B must be within protocol limits (§16.2).
+    // B must be within protocol limits (Section 16.2).
     if (B < limits::kMinManifestBodyB || B > limits::kMaxManifestBodyB) {
         return std::unexpected(SfcError{
             ErrorCode::FieldAboveMaximum,
@@ -71,7 +71,7 @@ Result<Manifest> parse_manifest(std::span<const uint8_t> data) {
     }
     uint32_t F = read_u32_le(std::span<const uint8_t, 4>{data.data() + 8, 4});
 
-    // F must be in [1, kMaxFileCount] (§16.2).
+    // F must be in [1, kMaxFileCount] (Section 16.2).
     if (F < 1 || F > limits::kMaxFileCount) {
         return std::unexpected(SfcError{
             ErrorCode::FieldAboveMaximum,
@@ -100,7 +100,7 @@ Result<Manifest> parse_manifest(std::span<const uint8_t> data) {
         uint16_t L = read_u16_le(std::span<const uint8_t, 2>{data.data() + pos, 2});
         pos += 2;
 
-        // L must be in [kMinPathLength, kMaxPathLength] (§16.3).
+        // L must be in [kMinPathLength, kMaxPathLength] (Section 16.3).
         if (L < limits::kMinPathLength || L > limits::kMaxPathLength) {
             return std::unexpected(SfcError{
                 ErrorCode::FieldAboveMaximum,

@@ -48,7 +48,7 @@ static GlobalHeader make_header(uint32_t n, uint32_t s,
 }
 
 // ===========================================================================
-// handle_duplicates — §9.5
+// handle_duplicates - Section 9.5
 // ===========================================================================
 
 TEST(HandleDuplicates, NoDuplicates_AllRetained) {
@@ -61,7 +61,7 @@ TEST(HandleDuplicates, NoDuplicates_AllRetained) {
 }
 
 TEST(HandleDuplicates, BenignDuplicate_KeepsOne) {
-    // Two byte-identical copies of the same chunk (same hash) → benign → one kept.
+    // Two byte-identical copies of the same chunk (same hash) -> benign -> one kept.
     auto c0a = make_chunk(0, {0xAA, 0xBB});
     auto c0b = c0a;  // exact copy
 
@@ -80,17 +80,17 @@ TEST(HandleDuplicates, BenignDuplicate_ThreeCopies_KeepsOne) {
 
 TEST(HandleDuplicates, ContaminatedB2_BothValidHash_Error) {
     // Two chunks share the same index but have different payloads.
-    // Both have valid hashes → B2 → ContaminatedDuplicate error (§9.5).
+    // Both have valid hashes -> B2 -> ContaminatedDuplicate error (Section 9.5).
     auto c0a = make_chunk(0, {0x01});
     auto c0b = make_chunk(0, {0x02});  // different payload, different hash
 
     auto result = handle_duplicates({c0a, c0b});
-    ASSERT_FALSE(result.has_value()) << "B2: both pass hash check → ContaminatedDuplicate";
+    ASSERT_FALSE(result.has_value()) << "B2: both pass hash check -> ContaminatedDuplicate";
     EXPECT_EQ(result.error().code, ErrorCode::ContaminatedDuplicate);
 }
 
 TEST(HandleDuplicates, ContaminatedB1_OneCorrupted_KeepsGood) {
-    // One chunk has a valid hash; its twin has a tampered hash → B1 → keep valid.
+    // One chunk has a valid hash; its twin has a tampered hash -> B1 -> keep valid.
     auto c_good = make_chunk(0, {0xCC});
     auto c_bad  = c_good;
     c_bad.hash[0] ^= 0xFF;  // corrupt stored hash (validate_chunk_hash will fail)
@@ -113,11 +113,11 @@ TEST(HandleDuplicates, MultipleIndices_PartialDuplicate) {
 }
 
 // ===========================================================================
-// full_reassembly — §9.1
+// full_reassembly - Section 9.1
 // ===========================================================================
 
 TEST(FullReassembly, SingleChunk_FullyVerified) {
-    // content = {1,2,3,4}, S=8 → one block zero-padded to 8 bytes.
+    // content = {1,2,3,4}, S=8 -> one block zero-padded to 8 bytes.
     std::vector<uint8_t> content = {0x01, 0x02, 0x03, 0x04};
     const uint32_t s = 8;
 
@@ -190,7 +190,7 @@ TEST(FullReassembly, WrongGlobalHash_Error) {
 }
 
 TEST(FullReassembly, WrongBlockCount_Error) {
-    // N=2 but only one block provided → error.
+    // N=2 but only one block provided -> error.
     std::vector<uint8_t> block(8, 0x00);
     GlobalHeader hdr = make_header(2, 8);
     hdr.global_hash.fill(0x00);
@@ -201,7 +201,7 @@ TEST(FullReassembly, WrongBlockCount_Error) {
 }
 
 // ===========================================================================
-// partial_reassembly — §9.3
+// partial_reassembly - Section 9.3
 // ===========================================================================
 
 TEST(PartialReassembly, OnlyChunk0_ReturnsPrefix) {
@@ -213,7 +213,7 @@ TEST(PartialReassembly, OnlyChunk0_ReturnsPrefix) {
     GlobalHeader hdr = make_header(n, s, uuid);
     hdr.inner_file_size = static_cast<uint64_t>(n) * s;
 
-    // Block for chunk 0 (identity-compressed → payload == block).
+    // Block for chunk 0 (identity-compressed -> payload == block).
     std::vector<uint8_t> block0(s, 0x01);
     auto c0 = make_chunk(0, block0, uuid);
 

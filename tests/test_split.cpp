@@ -1,5 +1,5 @@
 /// @file test_split.cpp
-/// @brief Tests for split transport (P2, §13): encode_split, decode_split, decode_multi.
+/// @brief Tests for split transport (P2, Section 13): encode_split, decode_split, decode_multi.
 
 #include "sfc/split_decoder.h"
 #include "sfc/split_encoder.h"
@@ -46,7 +46,7 @@ static std::vector<uint8_t> make_content(size_t size, uint8_t start = 0x00) {
 }
 
 // ===========================================================================
-// encode_split — parameter validation
+// encode_split - parameter validation
 // ===========================================================================
 
 TEST(EncodeSplit, ZeroSegments_Error) {
@@ -72,7 +72,7 @@ TEST(EncodeSplit, ProducesCorrectSegmentCount) {
 }
 
 TEST(EncodeSplit, SegmentCountCappedAtTotalChunks) {
-    // 1 data chunk, 0 recovery → total_chunks = 1; cap at 1 even if 5 requested.
+    // 1 data chunk, 0 recovery -> total_chunks = 1; cap at 1 even if 5 requested.
     auto p = make_params(CompressionAlgo::Identity, 256, 0, 0x03);
     auto res = encode_split(make_content(10), p, 5);
     ASSERT_TRUE(res.has_value()) << res.error().detail;
@@ -120,7 +120,7 @@ TEST(EncodeSplit, TerminalSegmentIsLast) {
 }
 
 // ===========================================================================
-// encode_split + decode_split — round-trips
+// encode_split + decode_split - round-trips
 // ===========================================================================
 
 TEST(P2RoundTrip, OneSegment_Identity) {
@@ -203,7 +203,7 @@ TEST(P2RoundTrip, SegmentsInReversedOrder) {
 }
 
 TEST(P2RoundTrip, WithRS_DropOneSegment) {
-    // N=2 data + M=1 recovery → can lose any 1 chunk.
+    // N=2 data + M=1 recovery -> can lose any 1 chunk.
     // Spread across 3 segments (1 chunk each); drop the middle segment.
     auto p   = make_params(CompressionAlgo::Identity, 64, /*m=*/1, 0x16);
     auto content = make_content(100);
@@ -220,7 +220,7 @@ TEST(P2RoundTrip, WithRS_DropOneSegment) {
 }
 
 // ===========================================================================
-// decode_split — error cases
+// decode_split - error cases
 // ===========================================================================
 
 TEST(DecodeSplit, NoSegments_Error) {
@@ -246,7 +246,7 @@ TEST(DecodeSplit, DuplicateSegmentIndex_Error) {
     ASSERT_TRUE(enc.has_value()) << enc.error().detail;
     ASSERT_EQ(enc->size(), 2u);
 
-    // Pass segment 0 twice — same segment_index → error.
+    // Pass segment 0 twice - same segment_index -> error.
     std::vector<std::vector<uint8_t>> segs = {(*enc)[0], (*enc)[0]};
     auto res = decode_split(segs);
     ASSERT_FALSE(res.has_value());
@@ -264,13 +264,13 @@ TEST(DecodeSplit, InconsistentHeaders_Error) {
     auto enc2 = encode_split(c2, p2, 1);
     ASSERT_TRUE(enc1.has_value()); ASSERT_TRUE(enc2.has_value());
 
-    // Mixing segments from different files → header mismatch (different UUID,
+    // Mixing segments from different files -> header mismatch (different UUID,
     // different content, etc.).  The error might manifest as GlobalHeaderConflict
     // or as an inner decode error; either way it must fail.
     std::vector<std::vector<uint8_t>> segs = {(*enc1)[0], (*enc2)[0]};
     auto res = decode_split(segs);
     ASSERT_FALSE(res.has_value());
-    // Accept any file-level error — the exact code depends on which check fires first.
+    // Accept any file-level error - the exact code depends on which check fires first.
 }
 
 // ===========================================================================

@@ -2,7 +2,7 @@
 /// @brief GF(2^16) arithmetic implementation over polynomial 0x1002D.
 ///
 /// All tables are computed once at program startup and stored as const globals.
-/// Hot-path functions (gf_mul, gf_inv) do a single table lookup each — O(1).
+/// Hot-path functions (gf_mul, gf_inv) do a single table lookup each - O(1).
 
 #include "sfc/gf_arithmetic.h"
 
@@ -27,7 +27,7 @@ ExpTable build_exp_table() noexcept {
         // left-shift by 1 (multiply by 2), then reduce mod kPoly if the
         // degree-16 bit is set.
         x <<= 1;
-        if (x & kFieldSize) {          // bit 16 set → degree exceeds 15
+        if (x & kFieldSize) {          // bit 16 set -> degree exceeds 15
             x ^= kPoly;               // reduce: subtract (XOR) the polynomial
         }
     }
@@ -55,13 +55,13 @@ LogTable build_log_table(const ExpTable& exp) noexcept {
 }
 
 // ---------------------------------------------------------------------------
-// Precomputed tables — initialised once before main() via static initialisation.
+// Precomputed tables - initialised once before main() via static initialisation.
 // ---------------------------------------------------------------------------
 
 const ExpTable kExpTable = build_exp_table();
 const LogTable kLogTable = build_log_table(kExpTable);
 
-// Self-test: the spec mandates gf_inv(2) == 0x8016 as a reference value (§6.2).
+// Self-test: the spec mandates gf_inv(2) == 0x8016 as a reference value (Section 6.2).
 // Computed once at startup; a mismatch means the polynomial or generator is wrong.
 namespace {
 [[maybe_unused]] const bool kGfTableCheck = [] {

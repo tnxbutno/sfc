@@ -8,6 +8,7 @@
 #include "sfc/global_header.h"
 #include "sfc/segment_header.h"
 #include "sfc/types.h"
+#include "sfc/validation.h"
 
 #include <array>
 #include <chrono>
@@ -96,14 +97,14 @@ inline sfc::FileUuid generate_uuid() {
 // Naming helpers
 // ---------------------------------------------------------------------------
 
-/// Derive the output .sfc path from the input path:  "input.bin" → "input.sfc".
+/// Derive the output .sfc path from the input path:  "input.bin" -> "input.sfc".
 inline std::string default_output_path(const std::string& input) {
     return std::filesystem::path(input).replace_extension(".sfc").string();
 }
 
 /// Build the N-th segment output path.
-/// base="archive.sfc", index=0, total=4  →  "archive-01.sfc"
-/// base="archive.sfc", index=0, total=100 →  "archive-001.sfc"
+/// base="archive.sfc", index=0, total=4  ->  "archive-01.sfc"
+/// base="archive.sfc", index=0, total=100 ->  "archive-001.sfc"
 inline std::string segment_path(const std::string& base,
                                  uint32_t index, uint32_t total) {
     const std::filesystem::path p(base);
@@ -237,7 +238,8 @@ inline std::string inner_filename_str(const std::array<uint8_t, 255>& raw) {
 // ---------------------------------------------------------------------------
 
 /// Parse the GlobalHeader from a complete SFC file byte buffer.
-/// Handles preamble skip; uses the H field at offset 8 to locate the header region.
+/// Validates the preamble, then uses the H field at offset 8 to locate the
+/// header region.
 inline sfc::Result<sfc::GlobalHeader>
 parse_header_from_file(std::span<const uint8_t> data) {
     // Need at least preamble (8) + H field (4).
@@ -245,6 +247,10 @@ parse_header_from_file(std::span<const uint8_t> data) {
         return std::unexpected(sfc::SfcError{
             sfc::ErrorCode::BufferTooSmall, "file too small to contain a global header"});
     }
+    auto preamble_res = sfc::validate_preamble(
+        std::span<const uint8_t, 8>{data.data(), 8});
+    if (!preamble_res) return std::unexpected(preamble_res.error());
+
     const uint32_t h = sfc::read_u32_le(std::span<const uint8_t, 4>{data.data() + 8, 4});
     if (data.size() < static_cast<size_t>(8 + h + 4)) {
         return std::unexpected(sfc::SfcError{
@@ -296,7 +302,7 @@ inline bool read_file_head(const std::string& path,
 }
 
 /// Extract the UUID from the first 28 bytes of an SFC file
-/// (§13.3 Step 2: Preamble 8 + H-field 4 + UUID 16 = 28 bytes).
+/// (Section 13.3 Step 2: Preamble 8 + H-field 4 + UUID 16 = 28 bytes).
 /// Returns false if the header is too short or magic is wrong.
 inline bool uuid_from_head(const std::array<uint8_t, 28>& head,
                             sfc::FileUuid& out) {
@@ -313,7 +319,7 @@ inline bool uuid_from_head(const std::array<uint8_t, 28>& head,
 /// with the original path unchanged.
 ///
 /// Candidate files are identified by reading only the first 28 bytes
-/// (§13.3 Step 2 — MUST NOT read full file contents during scan).
+/// (Section 13.3 Step 2 - MUST NOT read full file contents during scan).
 inline std::vector<std::string>
 discover_split_siblings(const std::string& path) {
     std::vector<uint8_t> data;
@@ -336,7 +342,7 @@ discover_split_siblings(const std::string& path) {
         for (const auto& e : std::filesystem::directory_iterator(scan)) {
             if (!e.is_regular_file()) continue;
             if (e.path().extension() != ".sfc") continue;
-            // §13.3 Step 2: read only the first 28 bytes for UUID comparison.
+            // Section 13.3 Step 2: read only the first 28 bytes for UUID comparison.
             std::array<uint8_t, 28> head{};
             if (!read_file_head(e.path().string(), head)) continue;
             sfc::FileUuid candidate_uuid{};

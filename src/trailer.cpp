@@ -19,7 +19,7 @@ Result<Trailer> parse_trailer(std::span<const uint8_t, 64> data) {
         });
     }
 
-    // Reserved bytes 4-7 must be zero (§3.4 / §5.5).
+    // Reserved bytes 4-7 must be zero (Section 3.4 / Section 5.5).
     for (size_t i = 4; i < 8; ++i) {
         if (data[i] != 0x00) {
             return std::unexpected(SfcError{

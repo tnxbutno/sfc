@@ -4,10 +4,10 @@
 /// @brief Pure compression/decompression dispatch for SFC algorithm IDs (Section 7).
 ///
 /// Supports:
-///   0x00 — identity (no-op)
-///   0x01 — zstd (MUST)
-///   0x02 — brotli (SHOULD)
-///   0x03 — lz4 frame format (SHOULD)
+///   0x00 - identity (no-op)
+///   0x01 - zstd (MUST)
+///   0x02 - brotli (SHOULD)
+///   0x03 - lz4 frame format (SHOULD)
 ///
 /// All functions are pure (no side effects).
 
@@ -55,7 +55,7 @@ namespace sfc {
 ///
 /// For algorithm 0x00 (identity): returns a copy of the input.
 /// For other algorithms: decompresses and verifies the output size matches
-/// expected_size (per spec §6.4: decompressed size MUST equal S).
+/// expected_size (per spec Section 6.4: decompressed size MUST equal S).
 ///
 /// @param data          Compressed bytes (chunk payload).
 /// @param algo          Compression algorithm ID (normalised internally).
