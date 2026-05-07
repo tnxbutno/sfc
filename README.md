@@ -4,6 +4,7 @@ A C++ library and CLI implementing the **SFC format**: a binary container design
 reliable storage and transport under adverse conditions — partial data loss, corruption,
 or out-of-order delivery.
 
+Try the [WASM demo online](https://tnxbutno.github.io/sfc).
 A desktop GUI is available in the [sfc-gui](https://github.com/tnxbutno/sfc-gui).
 
 ## Why SFC exists
